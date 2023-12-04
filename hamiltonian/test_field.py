@@ -1,15 +1,14 @@
 import unittest
 from dimod import ExactSolver
-from hamiltonian.field import Field
-from hamiltonian.field import Field
+from hamiltonian.field import FieldAtPoint
 
-class TestField(unittest.TestCase):
+class TestFieldAtPoint(unittest.TestCase):
     def test_binary_variable_names_constructed_correctly(self):
         test_field = \
-            Field(
+            FieldAtPoint(
                 field_name = "t",
                 spatial_point_identifier = "x0",
-                number_of_binary_variables = 3
+                number_of_active_binary_variables = 1
             )
         self.assertEqual(
             ["t_x0_0", "t_x0_1", "t_x0_2"],
@@ -17,21 +16,49 @@ class TestField(unittest.TestCase):
             "incorrect names for binary variables"
         )
 
-    def test_domain_wall_weights_given_correctly(self):
+    def test_binary_variable_values_constructed_correctly(self):
         test_field = \
-            Field(
+            FieldAtPoint(
                 field_name = "t",
                 spatial_point_identifier = "x",
-                number_of_binary_variables = 4
+                number_of_active_binary_variables = 4
+            )
+        expected_names_with_values = [
+            ("t_x_0", 0.0),
+            ("t_x_1", 0.25),
+            ("t_x_2", 0.5),
+            ("t_x_3", 0.75),
+            ("t_x_4", 1.0)
+        ]
+        actual_names_with_values = \
+            test_field.binary_variable_names_with_field_values
+        print(f"actual_names_with_values = {actual_names_with_values}")
+        self.assertEqual(
+            len(expected_names_with_values),
+            len(actual_names_with_values)
+        )
+        for i in range(len(expected_names_with_values)):
+            self.assertAlmostEqual(
+                expected_names_with_values[i],
+                actual_names_with_values[i],
+                f"incorrect name and value for binary variable {i}"
+            )
+
+    def test_domain_wall_weights_given_correctly(self):
+        test_field = \
+            FieldAtPoint(
+                field_name = "t",
+                spatial_point_identifier = "x",
+                number_of_active_binary_variables = 2
             )
         end_weight = 10.0
         alignment_weight = 3.5
 
         actual_weights = \
-            test_field.get_weights_for_ICDW(
+            test_field.weights_for_ICDW(
                 end_spin_weight = end_weight,
                 spin_alignment_weight = alignment_weight
-            )
+            ).weight_matrix
 
         # All the nearest-neighbor interactions should have weights that
         # penalize differing values. This is XOR but that translates to a
@@ -71,36 +98,44 @@ class TestField(unittest.TestCase):
     def test_all_valid_strengths_for_only_domain_wall_conditions(self):
         test_sampler = ExactSolver()
         test_field = \
-            Field(
+            FieldAtPoint(
                 field_name = "t",
                 spatial_point_identifier = "x0",
-                number_of_binary_variables = 4
+                number_of_active_binary_variables = 6
             )
         end_weight = 10.0
         alignment_weight = 3.5
         binary_quadratic_model = \
-            test_field.get_weights_for_ICDW(
+            test_field.weights_for_ICDW(
                 end_spin_weight = end_weight,
                 spin_alignment_weight = alignment_weight
-            )
+            ).weight_matrix
 
         sampling_result = test_sampler.sample_qubo(binary_quadratic_model)
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         bitstrings_to_energies = {
-            f"{s['t_x0_0']}{s['t_x0_1']}{s['t_x0_2']}{s['t_x0_3']}": e
+            "".join([f"{s[n]}" for n in test_field.binary_variable_names]): e
             for s, e in [(d.sample, d.energy) for d in lowest_energy.data()]
         }
 
-        # We expect 3 states, all with the same energy as a domain wall between
-        # the first and second binary variables. In this case, all the pairwise
-        # correlations are 0 and all the linear weights are multiplied by 0
-        # except for the first binary variable, so the expected energy is simply
-        # the linear weight that it has.
-        expected_energy = -end_weight + alignment_weight
+        # We expect seven states, all with the same energy as a domain wall
+        # between the first and second binary variables. In this case, all the
+        # pairwise correlations are 0 and all the linear weights are multiplied
+        # by 0 except for the first binary variable, so the expected energy is
+        # simply the linear weight that it has.
+        expected_energy = alignment_weight - end_weight
         # The expected lowest energy states all start with 1 and end with 0, and
-        # we expect the three combinations where there are only 1s on the left
+        # we expect the seven combinations where there are only 1s on the left
         # and 0s on the right.
-        expected_bitstrings = ["1000", "1100", "1110"]
+        expected_bitstrings = [
+            "10000000",
+            "11000000",
+            "11100000",
+            "11110000",
+            "11111000",
+            "11111100",
+            "11111110"
+        ]
         self.assertEqual(
             {b: expected_energy for b in expected_bitstrings},
             bitstrings_to_energies,
