@@ -1,39 +1,51 @@
 from dwave.system import DWaveSampler, EmbeddingComposite
 import dwave.inspector
 from dimod import ExactSolver
-from hamiltonian.field import FieldAtPoint
-from hamiltonian.potential import SingleFieldPotential
+from configuration.configuration import DiscreteConfiguration
+from structure.bubble import BubbleProfile
+import hamiltonian.potential
 
-dwave_sampler = DWaveSampler()
-test_sampler = EmbeddingComposite(dwave_sampler)
-# test_sampler = ExactSolver()
-test_field = \
-    FieldAtPoint(
-        field_name = "t",
-        spatial_point_identifier = "x0",
-        number_of_active_binary_variables = 6
-    )
-end_weight = 10.0
-alignment_weight = 3.5
-weight_accumulator = \
-    test_field.weights_for_ICDW(
-        end_spin_weight = end_weight,
-        spin_alignment_weight = alignment_weight
-    )
-# In this case as well, the linear term is irrelevant.
-test_potential = SingleFieldPotential(lambda f : (2.0 * f) - 20.0)
-weight_accumulator.add(
-    test_potential.get_weights_for_potential(test_field).weight_matrix
+# dwave_sampler = DWaveSampler()
+# test_sampler = EmbeddingComposite(dwave_sampler)
+test_sampler = ExactSolver()
+
+def single_field_potential(field_value: int):
+    return (2.5 * (field_value - 3) * (field_value - 3)) + 10.0
+
+number_of_potential_values = 5
+discretized_potential = [
+    single_field_potential(f) for f in range(number_of_potential_values)
+]
+test_configuration = DiscreteConfiguration(
+    first_field_name="f",
+    number_of_spatial_steps=1,
+    spatial_step_in_inverse_GeV=1.0,
+    field_step_in_GeV=1.0,
+    potential_in_quartic_GeV_per_field_step=discretized_potential
+)
+test_bubble_profile = BubbleProfile(test_configuration)
+test_field = test_bubble_profile.fields_at_points[0].first_field
+
+potential_weights = hamiltonian.potential.weights_for(
+    test_configuration,
+    test_field
 )
 
-sampling_result = \
-    test_sampler.sample_qubo(
+end_weight = 10.0
+alignment_weight = 3.5
+weight_accumulator = test_field.weights_for_ICDW(
+        end_spin_weight=end_weight,
+        spin_alignment_weight=alignment_weight
+    )
+weight_accumulator.add(potential_weights.weight_matrix)
+
+sampling_result = test_sampler.sample_qubo(
         weight_accumulator.weight_matrix,
         # These kwargs are relevant only to the embedded sampler. The exact
         # solver ignores them (after complaining about being given unknown
         # kwargs).
-        num_reads = 100,
-        label = 'SDK Examples - AND Gate'
+        num_reads=100,
+        label='SDK Examples - AND Gate'
     )
 
 sample_lowest = sampling_result.lowest(rtol=0.01, atol=0.1)

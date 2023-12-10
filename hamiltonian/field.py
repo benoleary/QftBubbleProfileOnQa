@@ -1,48 +1,42 @@
-from typing import List, Tuple
+import minimization.variable
 from minimization.weight import AccumulatingWeightMatrix
 
 class FieldAtPoint:
     """
     This class represents the strength of a QFT scalar field at a point in
     space-time using binary variables in the Ising chain domain wall model.
-    The field takes up two extra variables beyond the given
-    number_of_active_binary_variables so that there can be a single domain wall.
+    The field takes (number_of_values_for_field + 1) binary variables so that
+    there can be a single domain wall.
     """
     def __init__(
             self,
             *,
             field_name: str,
             spatial_point_identifier: str,
-            number_of_active_binary_variables: int
+            number_of_values_for_field: int,
+            field_step_in_GeV: float
         ):
         """
         The constructor just sets up the names for the binary variables, since
         the D-Wave samplers just want dicts of names of binary variables or
         pairs of names of binary variables, mapped to weights.
         """
-        if number_of_active_binary_variables < 1:
-            raise ValueError("Number of active binary variables must be > 0")
+        if number_of_values_for_field < 2:
+            raise ValueError("Need a range of at least 2 values for the field")
         self.field_name = field_name
         self.spatial_point_identifier = spatial_point_identifier
-        self.number_of_active_binary_variables = \
-            number_of_active_binary_variables
+        # The variable names are indexed from zero, so if we have say 10 values
+        # for the field, we actually index 0 to 9 so use only 1 digit.
+        name_function = minimization.variable.name_for_index(
+            f"{field_name}_{spatial_point_identifier}_",
+            number_of_values_for_field - 1
+        )
         # We need a binary variable fixed to 1 at the start and another fixed to
         # 0 at the end, in addition to the variables which can actually vary.
         self.binary_variable_names = [
-            f"{field_name}_{spatial_point_identifier}_{i}"
-            for i in range(number_of_active_binary_variables + 2)
+            name_function(i) for i in range(number_of_values_for_field + 1)
         ]
-        normalization_factor = 1.0/number_of_active_binary_variables
-        # We do not bother with a value for the last binary variable, which is
-        # fixed at 0.
-        self.binary_variable_names_with_field_values = (
-            [(self.binary_variable_names[0], 0.0)]
-            + [
-                (self.binary_variable_names[i], i * normalization_factor)
-                for i in range(1, number_of_active_binary_variables)
-            ]
-            + [(self.binary_variable_names[-2], 1.0)]
-        )
+        self.field_step_in_GeV = field_step_in_GeV
 
     def weights_for_ICDW(
             self,
