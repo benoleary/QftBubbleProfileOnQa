@@ -1,5 +1,6 @@
 import unittest
 from dimod import ExactSolver
+import minimization.variable
 from hamiltonian.field import FieldAtPoint
 
 class TestFieldAtPoint(unittest.TestCase):
@@ -13,7 +14,7 @@ class TestFieldAtPoint(unittest.TestCase):
         self.assertEqual(
             ["t_x0_0", "t_x0_1", "t_x0_2"],
             test_field.binary_variable_names,
-            "incorrect names for binary variables"
+            "incorrect names for spin variables"
         )
 
     def test_domain_wall_weights_given_correctly(self):
@@ -26,44 +27,48 @@ class TestFieldAtPoint(unittest.TestCase):
         end_weight = 10.0
         alignment_weight = 3.5
 
-        actual_weights = test_field.weights_for_ICDW(
-                end_spin_weight = end_weight,
-                spin_alignment_weight = alignment_weight
+        actual_weights = test_field.domain_wall_weights(
+                end_spin_weight=end_weight,
+                spin_alignment_weight=alignment_weight
             )
 
+        # All the spins are either |1> which mlutiplies its weight by -1 or |0>
+        # which mlutiplies its weight by +1.
         # All the nearest-neighbor interactions should have weights that
-        # penalize differing values. This is XOR but that translates to a
-        # penalty for each binary variable with a correlation which cancels the
-        # individual penalties if both are 1.
+        # penalize differing values, by a simple positve bias.
         # Also, the first (index 0) and last (index 4 - 1 = 3) binary variables
-        # should have the weights which fix them to 1 for the first and 0 for
-        # the last, so should be end_weight but negative for the first one and
-        # positive for the last.
-        # Hence, at index 0, negative end_weight is forcing 1, and positive
+        # should have the weights which fix them to |1> for the first and |0>
+        # for the last, so should be end_weight for the first one (to encourage
+        # |1> bringing its -1) and negative for the last (to encourage |0>
+        # bringing its +1).
+        # Hence, at index 0, positive end_weight is forcing |1>, and positive
         # alignment_weight is forcing correlation with index 1.
         # At index 1, positive alignment_weight is forcing correlation with
         # index 0 and again with index 2.
         # At index 2, positive alignment_weight is forcing correlation with
         # index 1 and again with index 3.
-        # Finally, at index 3, positive end_weight is forcing 0, and positive
+        # Finally, at index 3, negative end_weight is forcing |0>, and positive
         # alignment_weight is forcing correlation with index 2.
-        # Then all the pairs have -2 * alignment_weight to cancel the sum if
-        # they are both 1 (nothing needs to cancel if both are 0).
         # The linear terms are actually given by the diagonal elements.
-        expected_weights = {
-            ("t_x_0", "t_x_0"): -end_weight + alignment_weight,
-            ("t_x_1", "t_x_1"): 2.0 * alignment_weight,
-            ("t_x_2", "t_x_2"): 2.0 * alignment_weight,
-            ("t_x_3", "t_x_3"): end_weight + alignment_weight,
-            ("t_x_0", "t_x_1"): -2.0 * alignment_weight,
-            ("t_x_1", "t_x_2"): -2.0 * alignment_weight,
-            ("t_x_2", "t_x_3"): -2.0 * alignment_weight
+        expected_linear_weights = {
+            "t_x_0": end_weight,
+            "t_x_3": -end_weight
+        }
+        expected_quadratic_weights = {
+            ("t_x_0", "t_x_1"): -alignment_weight,
+            ("t_x_1", "t_x_2"): -alignment_weight,
+            ("t_x_2", "t_x_3"): -alignment_weight
         }
 
         self.assertEqual(
-            expected_weights,
-            actual_weights.weight_matrix,
-            "incorrect weights for binary variables"
+            expected_linear_weights,
+            actual_weights.linear_biases,
+            "incorrect weights for linear biases"
+        )
+        self.assertEqual(
+            expected_quadratic_weights,
+            actual_weights.quadratic_biases,
+            "incorrect weights for quadratic biases"
         )
 
     def test_all_valid_strengths_for_only_domain_wall_conditions(self):
@@ -76,26 +81,33 @@ class TestFieldAtPoint(unittest.TestCase):
             )
         end_weight = 10.0
         alignment_weight = 3.5
-        binary_quadratic_model = test_field.weights_for_ICDW(
-                end_spin_weight = end_weight,
-                spin_alignment_weight = alignment_weight
+        spin_biases = test_field.domain_wall_weights(
+                end_spin_weight=end_weight,
+                spin_alignment_weight=alignment_weight
             )
 
-        sampling_result = test_sampler.sample_qubo(
-            binary_quadratic_model.weight_matrix
+        sampling_result = test_sampler.sample_ising(
+            h=spin_biases.linear_biases,
+            J=spin_biases.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = {
-            "".join([f"{s[n]}" for n in test_field.binary_variable_names]): e
+            minimization.variable.as_bitstring(
+                spin_variable_names=test_field.binary_variable_names,
+                spin_mapping=s
+            ): e
             for s, e in [(d.sample, d.energy) for d in lowest_energy.data()]
         }
 
         # We expect seven states, all with the same energy as a domain wall
-        # between the first and second binary variables. In this case, all the
-        # pairwise correlations are 0 and all the linear weights are multiplied
-        # by 0 except for the first binary variable, so the expected energy is
-        # simply the linear weight that it has.
-        expected_energy = alignment_weight - end_weight
+        # between the first and second binary variables. The state 10000000
+        # should have energy
+        # -end_weight (from the first spin)
+        # + alignment_weight (from the domain wall)
+        # - 6 * alignment_weight (from the 6 pairs of aligned neighboring |0>s)
+        # -end_weight (from the last spin)
+        # = -2 * end_weight - 5 * alignment_weight
+        expected_energy = -2.0 * end_weight - 5.0 * alignment_weight
         # The expected lowest energy states all start with 1 and end with 0, and
         # we expect the seven combinations where there are only 1s on the left
         # and 0s on the right.
