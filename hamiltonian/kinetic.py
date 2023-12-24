@@ -14,6 +14,27 @@ def weights_for_difference(
     radius has a value for its field(s) and a value for the field difference(s)
     but in the end it would amount to the same thing while making intermediate
     steps more complicated.
+    However, we bother only with correlations between spins which can change
+    under the ICDW model, so we give no weight to correlations of the first or
+    last spins of each field.
     """
     weights = {}
+    # We assume that both fields have the same step sizes.
+    absolute_weight = (
+        (
+            0.125
+            * at_smaller_radius.field_step_in_GeV
+            * at_larger_radius.field_step_in_GeV
+        )
+        / (radius_difference_in_inverse_GeV * radius_difference_in_inverse_GeV)
+    )
+
+    for left in (at_smaller_radius, at_larger_radius):
+        for right in (at_smaller_radius, at_larger_radius):
+            signed_weight = (
+                absolute_weight if left == right else -absolute_weight
+            )
+            for l in left.binary_variable_names[1:-1]:
+                for r in right.binary_variable_names[1:-1]:
+                    weights[(l, r)] = signed_weight
     return BiasAccumulator(initial_quadratics=weights)
