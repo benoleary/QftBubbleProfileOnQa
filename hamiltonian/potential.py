@@ -1,9 +1,10 @@
+from typing import List
 from minimization.weight import BiasAccumulator
 from hamiltonian.field import FieldAtPoint
-from configuration.configuration import DiscreteConfiguration
 
 def weights_for(
-        configuration: DiscreteConfiguration,
+        *,
+        potential_in_quartic_GeV_per_field_step: List[float],
         single_field: FieldAtPoint
     ) -> BiasAccumulator:
         """
@@ -12,8 +13,9 @@ def weights_for(
         spatial point. (The calculation is significantly different when dealing
         with multiple fields at a single spatial point.)
         """
-        potential_values = configuration.potential_in_quartic_GeV_per_field_step
-        number_of_potential_values = len(potential_values)
+        number_of_potential_values = len(
+            potential_in_quartic_GeV_per_field_step
+        )
         # If there are N binary variables for the field, at least 1 and at most
         # (N - 1) of them will be 1 and the rest 0, so there are (N - 1) values
         # possible for the field, which must match the number of values provided
@@ -43,6 +45,9 @@ def weights_for(
         # index minus the potential for the higher index.
         for i in range(1, number_of_field_values):
             linear_weights[single_field.binary_variable_names[i]] = (
-                0.5 * (potential_values[i - 1] - potential_values[i])
+                0.5 * (
+                    potential_in_quartic_GeV_per_field_step[i - 1]
+                    - potential_in_quartic_GeV_per_field_step[i]
+                )
             )
         return BiasAccumulator(initial_linears=linear_weights)

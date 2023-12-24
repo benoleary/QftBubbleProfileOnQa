@@ -60,6 +60,8 @@ class TestFieldAtPoint(unittest.TestCase):
             ("t_x_2", "t_x_3"): -alignment_weight
         }
 
+        # All the weights should be exactly representable in binary so we can
+        # make floating-point number comparisons without needing a tolerance.
         self.assertEqual(
             expected_linear_weights,
             actual_weights.linear_biases,
@@ -123,6 +125,8 @@ class TestFieldAtPoint(unittest.TestCase):
         expected_bitstrings_to_energies = {
             b: expected_energy for b in expected_bitstrings
         }
+        # All the energies should be exactly representable in binary so we can
+        # make floating-point number comparisons without needing a tolerance.
         self.assertEqual(
             expected_bitstrings_to_energies,
             actual_bitstrings_to_energies,

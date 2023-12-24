@@ -13,7 +13,7 @@ class TestSingleFieldPotential(unittest.TestCase):
     def test_proportional_to_field_value(self):
         def linear_potential(field_value: int):
             return (2.5 * field_value) + 10.0
-        _, actual_weights = self._for_single_test_field(
+        _, _, actual_weights = self._for_single_test_field(
             single_field_potential=linear_potential,
             number_of_potential_values=5
         )
@@ -43,22 +43,18 @@ class TestSingleFieldPotential(unittest.TestCase):
         # In this case as well, the linear term is irrelevant.
         def linear_potential(field_value: int):
             return (2.0 * field_value) + 20.0
-        test_field, potential_weights = self._for_single_test_field(
-            single_field_potential=linear_potential,
-            number_of_potential_values=7
-        )
-        test_sampler = ExactSolver()
-        end_weight = 10.0
-        alignment_weight = 3.5
-        weight_accumulator = test_field.domain_wall_weights(
-                end_spin_weight=end_weight,
-                spin_alignment_weight=alignment_weight
+        test_field, domain_wall_weights, potential_weights = (
+            self._for_single_test_field(
+                single_field_potential=linear_potential,
+                number_of_potential_values=7
             )
-        weight_accumulator.add(potential_weights)
+        )
+        potential_weights.add(domain_wall_weights)
 
+        test_sampler = ExactSolver()
         sampling_result = test_sampler.sample_ising(
-            h=weight_accumulator.linear_biases,
-            J=weight_accumulator.quadratic_biases
+            h=potential_weights.linear_biases,
+            J=potential_weights.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         bitstrings_to_energies = {
@@ -85,22 +81,17 @@ class TestSingleFieldPotential(unittest.TestCase):
         # As ever, the linear term is irrelevant.
         def quadratic_potential(field_value: int):
             return (2.5 * (field_value - 5) * (field_value - 5)) + 10.0
-        test_field, potential_weights = self._for_single_test_field(
-            single_field_potential=quadratic_potential,
-            number_of_potential_values=7
-        )
-        test_sampler = ExactSolver()
-        end_weight = 10.0
-        alignment_weight = 3.5
-        weight_accumulator = test_field.domain_wall_weights(
-                end_spin_weight=end_weight,
-                spin_alignment_weight=alignment_weight
+        test_field, domain_wall_weights, potential_weights = (
+            self._for_single_test_field(
+                single_field_potential=quadratic_potential,
+                number_of_potential_values=7
             )
-        weight_accumulator.add(potential_weights)
-
+        )
+        potential_weights.add(domain_wall_weights)
+        test_sampler = ExactSolver()
         sampling_result = test_sampler.sample_ising(
-            h=weight_accumulator.linear_biases,
-            J=weight_accumulator.quadratic_biases
+            h=potential_weights.linear_biases,
+            J=potential_weights.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         bitstrings_to_energies = {
@@ -128,7 +119,7 @@ class TestSingleFieldPotential(unittest.TestCase):
             *,
             single_field_potential: Callable[[int], float],
             number_of_potential_values: int
-        ) -> Tuple[FieldAtPoint, BiasAccumulator]:
+        ) -> Tuple[FieldAtPoint, BiasAccumulator, BiasAccumulator]:
         discretized_potential = [
             single_field_potential(f) for f in range(number_of_potential_values)
         ]
@@ -139,11 +130,26 @@ class TestSingleFieldPotential(unittest.TestCase):
             field_step_in_GeV=1.0,
             potential_in_quartic_GeV_per_field_step=discretized_potential
         )
+
+        # The construction of test_bubble_profile already generates ICDW weights
+        # and potential weights (but with values for the ICDW weights derived
+        # from the maximum potential difference), but we generate the weights
+        # directly here to ensure that we test specific methods.
         test_bubble_profile = BubbleProfile(test_configuration)
         test_field = test_bubble_profile.fields_at_points[0].first_field
 
-        potential_weights = hamiltonian.potential.weights_for(
-            test_configuration,
-            test_field
+        end_weight = 10.0
+        alignment_weight = 3.5
+        domain_wall_weights = test_field.domain_wall_weights(
+                end_spin_weight=end_weight,
+                spin_alignment_weight=alignment_weight
+            )
+
+        potential_values = (
+            test_configuration.potential_in_quartic_GeV_per_field_step
         )
-        return (test_field, potential_weights)
+        potential_weights = hamiltonian.potential.weights_for(
+            potential_in_quartic_GeV_per_field_step=potential_values,
+            single_field=test_field
+        )
+        return (test_field, domain_wall_weights, potential_weights)
