@@ -45,12 +45,13 @@ class TestBubbleProfile(unittest.TestCase):
         actual_spin_biases = test_bubble_profile.spin_biases
 
         # There are 2 points, each with 3 values for the field (so bitstrings
-        # 1000, 1100, and 1110). The maximum potential difference is 6.8, so the
-        # alignment weight should be 13.6 and the end weight should be 27.2.
+        # 1000, 1100, and 1110). The maximum potential difference is 6.8 and the
+        # maximum kinetic term is 0.5 * 2^2, so the alignment weight should be
+        # 17.6 and the end weight should be 35.2.
         # Each "variable" spin should have a weight equal to half the difference
         # between its potential and the potential of the previous spin.
-        expected_end_weight = 27.2
-        expected_alignment_weight = -13.6
+        expected_end_weight = 35.2
+        expected_alignment_weight = -17.6
 
         # The weight is multiplied by the square of the field step and the
         # inverse square of the radius step but both are 1.
