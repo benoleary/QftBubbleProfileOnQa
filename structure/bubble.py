@@ -64,8 +64,25 @@ class BubbleProfile:
         self.spin_biases = self._set_up_weights()
 
     def _set_up_weights(self) -> BiasAccumulator:
+        maximum_field_difference = (
+            self.configuration.field_step_in_GeV
+            * (self.configuration.number_of_values_for_field - 1.0)
+        )
+        field_difference_over_radius_step = (
+            maximum_field_difference
+            / self.configuration.spatial_step_in_inverse_GeV
+        )
+        maximum_kinetic_term = (
+            (1.0 if self.configuration.second_field_name else 0.5)
+            * field_difference_over_radius_step
+            * field_difference_over_radius_step
+        )
         domain_wall_alignment_weight = (
-            2.0 * self.configuration.maximum_weight_difference
+            2.0
+            * (
+                self.configuration.maximum_weight_difference
+                + maximum_kinetic_term
+            )
         )
         domain_end_weight = 2.0 * domain_wall_alignment_weight
         calculated_biases = BiasAccumulator()
