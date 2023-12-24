@@ -29,7 +29,7 @@ class BiasAccumulator:
 
     def add_quadratics(self, weights_to_add: Dict[Tuple[str, str], float]):
         for k, v in weights_to_add.items():
-            self.quadratic_biases[k] = self.linear_biases.get(k, 0.0) + v
+            self.quadratic_biases[k] = self.quadratic_biases.get(k, 0.0) + v
 
     def add(self, other: SelfType):
         self.add_linears(other.linear_biases)
