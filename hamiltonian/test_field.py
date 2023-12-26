@@ -32,8 +32,8 @@ class TestFieldAtPoint(unittest.TestCase):
                 spin_alignment_weight=alignment_weight
             )
 
-        # All the spins are either |1> which mlutiplies its weight by -1 or |0>
-        # which mlutiplies its weight by +1.
+        # All the spins are either |1> which multiplies its weight by -1 or |0>
+        # which multiplies its weight by +1.
         # All the nearest-neighbor interactions should have weights that
         # penalize differing values, by a simple positve bias.
         # Also, the first (index 0) and last (index 4 - 1 = 3) binary variables
