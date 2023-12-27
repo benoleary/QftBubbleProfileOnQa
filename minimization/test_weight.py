@@ -40,3 +40,7 @@ class TestBiasAccumulator(unittest.TestCase):
             expected_quadratics,
             test_accumulator.quadratic_biases
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

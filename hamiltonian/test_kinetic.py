@@ -299,3 +299,7 @@ class TestKinetic(unittest.TestCase):
                 field_step_in_GeV=self.field_step_in_GeV
             )
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
