@@ -1,4 +1,5 @@
 from typing import Callable, Dict, List
+from dimod import SampleSet
 
 def name_for_index(
         name_prefix: str,
@@ -21,3 +22,16 @@ def as_bitstring(
     return "".join(
         [spin_to_zero_or_one(spin_mapping[n]) for n in spin_variable_names]
     )
+
+def bitstrings_to_energies(
+        *,
+        binary_variable_names: List[str],
+        sample_set: SampleSet
+    ) -> Dict[str, float]:
+    return {
+        as_bitstring(
+                spin_variable_names=binary_variable_names,
+                spin_mapping=s
+            ): e
+            for s, e in [(d.sample, d.energy) for d in sample_set.data()]
+    }

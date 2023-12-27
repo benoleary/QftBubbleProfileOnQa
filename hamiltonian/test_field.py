@@ -1,9 +1,9 @@
-import unittest
+import pytest
 from dimod import ExactSolver
 import minimization.variable
 from hamiltonian.field import FieldAtPoint
 
-class TestFieldAtPoint(unittest.TestCase):
+class TestFieldAtPoint():
     def test_binary_variable_names_constructed_correctly(self):
         test_field = FieldAtPoint(
                 field_name="t",
@@ -11,13 +11,11 @@ class TestFieldAtPoint(unittest.TestCase):
                 number_of_values_for_field=2,
                 field_step_in_GeV=1.0
             )
-        self.assertEqual(
-            ["t_x0_0", "t_x0_1", "t_x0_2"],
-            test_field.binary_variable_names,
-            "incorrect names for spin variables"
-        )
+        assert (
+            ["t_x0_0", "t_x0_1", "t_x0_2"] == test_field.binary_variable_names
+        ), "incorrect names for spin variables"
 
-    def test_domain_wall_weights_given_correctly(self):
+    def test_weights_for_domain_wall_given_correctly(self):
         test_field = FieldAtPoint(
                 field_name="t",
                 spatial_point_identifier="x",
@@ -27,7 +25,7 @@ class TestFieldAtPoint(unittest.TestCase):
         end_weight = 10.0
         alignment_weight = 3.5
 
-        actual_weights = test_field.domain_wall_weights(
+        actual_weights = test_field.weights_for_domain_wall(
                 end_spin_weight=end_weight,
                 spin_alignment_weight=alignment_weight
             )
@@ -62,16 +60,12 @@ class TestFieldAtPoint(unittest.TestCase):
 
         # All the weights should be exactly representable in binary so we can
         # make floating-point number comparisons without needing a tolerance.
-        self.assertEqual(
-            expected_linear_weights,
-            actual_weights.linear_biases,
-            "incorrect weights for linear biases"
-        )
-        self.assertEqual(
-            expected_quadratic_weights,
-            actual_weights.quadratic_biases,
-            "incorrect weights for quadratic biases"
-        )
+        assert (
+            expected_linear_weights == actual_weights.linear_biases
+        ), "incorrect weights for linear biases"
+        assert (
+            expected_quadratic_weights == actual_weights.quadratic_biases
+        ), "incorrect weights for quadratic biases"
 
     def test_all_valid_strengths_for_only_domain_wall_conditions(self):
         test_sampler = ExactSolver()
@@ -83,7 +77,7 @@ class TestFieldAtPoint(unittest.TestCase):
             )
         end_weight = 10.0
         alignment_weight = 3.5
-        spin_biases = test_field.domain_wall_weights(
+        spin_biases = test_field.weights_for_domain_wall(
                 end_spin_weight=end_weight,
                 spin_alignment_weight=alignment_weight
             )
@@ -93,13 +87,12 @@ class TestFieldAtPoint(unittest.TestCase):
             J=spin_biases.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-        actual_bitstrings_to_energies = {
-            minimization.variable.as_bitstring(
-                spin_variable_names=test_field.binary_variable_names,
-                spin_mapping=s
-            ): e
-            for s, e in [(d.sample, d.energy) for d in lowest_energy.data()]
-        }
+        actual_bitstrings_to_energies = (
+            minimization.variable.bitstrings_to_energies(
+                binary_variable_names=test_field.binary_variable_names,
+                sample_set=lowest_energy
+            )
+        )
 
         # We expect seven states, all with the same energy as a domain wall
         # between the first and second binary variables. The state 10000000
@@ -127,12 +120,86 @@ class TestFieldAtPoint(unittest.TestCase):
         }
         # All the energies should be exactly representable in binary so we can
         # make floating-point number comparisons without needing a tolerance.
-        self.assertEqual(
-            expected_bitstrings_to_energies,
-            actual_bitstrings_to_energies,
-            "incorrect weights for binary variables"
+        assert (
+            expected_bitstrings_to_energies == actual_bitstrings_to_energies
+        ), "incorrect weights for binary variables"
+
+    @pytest.mark.parametrize(
+            "number_of_down_spins, expected_bitstring",
+            [
+                (1, "100000"),
+                (2, "110000"),
+                (3, "111000"),
+                (4, "111100"),
+                (5, "111110")
+            ]
+        )
+    def test_fixing_value(self, number_of_down_spins, expected_bitstring):
+        test_sampler = ExactSolver()
+        test_field = FieldAtPoint(
+                field_name="t",
+                spatial_point_identifier="x",
+                number_of_values_for_field=5,
+                field_step_in_GeV=1.0
+            )
+        fixing_weight = 11.0
+        # With 5 possible values for the field, there are 6 spins (the first and
+        # last are fixed, and there are 5 values for 0 to 4 of the middle 4
+        # spins being |1>). Each spin contributes its weight to the energy of
+        # the sample (all negative by design).
+        expected_energy = -6.0 * fixing_weight
+
+        spin_biases = test_field.weights_for_fixed_value(
+            fixing_weight=fixing_weight,
+            number_of_down_spins=number_of_down_spins
         )
 
+        expected_linear_weights = {
+            "t_x_0": fixing_weight,
+            "t_x_1": (
+                fixing_weight if number_of_down_spins >= 2
+                else -fixing_weight
+            ),
+            "t_x_2": (
+                fixing_weight if number_of_down_spins >= 3
+                else -fixing_weight
+            ),
+            "t_x_3": (
+                fixing_weight if number_of_down_spins >= 4
+                else -fixing_weight
+            ),
+            "t_x_4": (
+                fixing_weight if number_of_down_spins >= 5
+                else -fixing_weight
+            ),
+            "t_x_5": -fixing_weight
+        }
 
-if __name__ == "__main__":
-    unittest.main()
+        # All the weights should be exactly representable in binary so
+        # we can make floating-point number comparisons without needing
+        # a tolerance.
+        assert (
+            expected_linear_weights == spin_biases.linear_biases
+        ), "incorrect weights for linear biases"
+        assert (
+            {} == spin_biases.quadratic_biases
+        ), "incorrect weights for quadratic biases"
+
+        sampling_result = test_sampler.sample_ising(
+            h=spin_biases.linear_biases,
+            J=spin_biases.quadratic_biases
+        )
+        lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
+        actual_bitstrings_to_energies = (
+            minimization.variable.bitstrings_to_energies(
+                binary_variable_names=test_field.binary_variable_names,
+                sample_set=lowest_energy
+            )
+        )
+
+        # All the energies should be exactly representable in binary so we can
+        # make floating-point number comparisons without needing a tolerance.
+        expected_bitstrings_to_energies = {expected_bitstring: expected_energy}
+        assert (
+            expected_bitstrings_to_energies == actual_bitstrings_to_energies
+        ), "incorrect weights for binary variables"

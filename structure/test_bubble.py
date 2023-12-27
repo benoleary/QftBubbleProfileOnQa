@@ -1,8 +1,8 @@
-import unittest
+import pytest
 from configuration.configuration import DiscreteConfiguration
 from structure.bubble import BubbleProfile
 
-class TestBubbleProfile(unittest.TestCase):
+class TestBubbleProfile():
     def test_spatial_identifiers_have_same_length(self):
         test_configuration = DiscreteConfiguration(
             first_field_name="f",
@@ -20,17 +20,13 @@ class TestBubbleProfile(unittest.TestCase):
         expected_spatial_identifiers = [
             "r{0:03}".format(i) for i in range(101)
         ]
-        self.assertEqual(
-            actual_spatial_identifiers,
-            expected_spatial_identifiers,
-            "incorrect text for spatial identifiers"
-        )
+        assert (
+            actual_spatial_identifiers == expected_spatial_identifiers
+        ), "incorrect text for spatial identifiers"
         actual_lengths = [len(s) for s in actual_spatial_identifiers]
-        self.assertEqual(
-            actual_lengths,
-            [4 for _ in range(101)],
-            "incorrect length(s) for spatial identifiers"
-        )
+        assert (
+            actual_lengths == [4 for _ in range(101)]
+        ), "incorrect length(s) for spatial identifiers"
 
     def test_weights_for_monotonic_potential(self):
         field_step_in_GeV = 1.0
@@ -109,30 +105,22 @@ class TestBubbleProfile(unittest.TestCase):
             ("f_r1_2", "f_r1_2"): expected_kinetic_weight
         }
 
-        self.assertEqual(
-            actual_spin_biases.linear_biases.keys(),
-            expected_linear_biases.keys(),
-            "incorrect linear bias variable names"
-        )
+        assert (
+            actual_spin_biases.linear_biases.keys()
+            == expected_linear_biases.keys()
+        ), "incorrect linear bias variable names"
         for variable_name in actual_spin_biases.linear_biases.keys():
-            self.assertAlmostEqual(
-                expected_linear_biases[variable_name],
-                actual_spin_biases.linear_biases.get(variable_name, 0.0),
-                msg=f"incorrect linear weight for {variable_name}"
-            )
+            assert (
+                pytest.approx(expected_linear_biases[variable_name])
+                == actual_spin_biases.linear_biases.get(variable_name, 0.0)
+            ), f"incorrect linear weight for {variable_name}"
 
-        self.assertEqual(
-            actual_spin_biases.quadratic_biases.keys(),
-            expected_quadratic_biases.keys(),
-            "incorrect quadratic bias variable names"
-        )
+        assert (
+            actual_spin_biases.quadratic_biases.keys()
+            == expected_quadratic_biases.keys()
+        ), "incorrect quadratic bias variable names"
         for variable_name in actual_spin_biases.quadratic_biases.keys():
-            self.assertAlmostEqual(
-                expected_quadratic_biases[variable_name],
-                actual_spin_biases.quadratic_biases.get(variable_name, 0.0),
-                msg=f"incorrect quadratic weight for {variable_name}"
-            )
-
-
-if __name__ == "__main__":
-    unittest.main()
+            assert(
+                pytest.approx(expected_quadratic_biases[variable_name])
+                == actual_spin_biases.quadratic_biases.get(variable_name, 0.0)
+            ), f"incorrect quadratic weight for {variable_name}"
