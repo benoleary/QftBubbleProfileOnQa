@@ -1,5 +1,5 @@
 from typing import Callable, Tuple
-import unittest
+import pytest
 from dimod import ExactSolver
 import minimization.variable
 from minimization.weight import BiasAccumulator
@@ -8,7 +8,7 @@ from structure.bubble import BubbleProfile
 from hamiltonian.field import FieldAtPoint
 import hamiltonian.potential
 
-class TestSingleFieldPotential(unittest.TestCase):
+class TestSingleFieldPotential():
     # In this case, the linear term is irrelevant.
     def test_proportional_to_field_value(self):
         def linear_potential(field_value: int):
@@ -28,16 +28,13 @@ class TestSingleFieldPotential(unittest.TestCase):
             "T_r0_3": -1.25,
             "T_r0_4": -1.25,
         }
-        self.assertEqual(
-            expected_linear_weights.keys(),
-            actual_linear_weights.keys()
-        )
+        assert expected_linear_weights.keys() == actual_linear_weights.keys()
+
         for expected_key in expected_linear_weights.keys():
-            self.assertAlmostEqual(
-                expected_linear_weights[expected_key],
-                actual_linear_weights.get(expected_key, 0.0),
-                msg=f"incorrect linear weight for {expected_key}"
-            )
+            assert (
+                pytest.approx(expected_linear_weights[expected_key])
+                == actual_linear_weights.get(expected_key, 0.0)
+            ), f"incorrect linear weight for {expected_key}"
 
     def test_linear_potential_minimized_correctly(self):
         # In this case as well, the linear term is irrelevant.
@@ -57,25 +54,19 @@ class TestSingleFieldPotential(unittest.TestCase):
             J=potential_weights.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-        bitstrings_to_energies = {
-            minimization.variable.as_bitstring(
-                spin_variable_names=test_field.binary_variable_names,
-                spin_mapping=s
-            ): e
-            for s, e in [(d.sample, d.energy) for d in lowest_energy.data()]
-        }
 
-        self.assertEqual(
-            1,
-            len(bitstrings_to_energies),
-            "expected only one minimum"
+        bitstrings_to_energies = (
+            minimization.variable.bitstrings_to_energies(
+                binary_variable_names=test_field.binary_variable_names,
+                sample_set=lowest_energy
+            )
         )
+
+        assert 1 == len(bitstrings_to_energies), "expected only one minimum"
         actual_solution_bitstring = next(iter(bitstrings_to_energies.keys()))
-        self.assertEqual(
-            "10000000",
-            actual_solution_bitstring,
-            "expected domain wall completely to the left"
-        )
+        assert (
+            "10000000" == actual_solution_bitstring
+        ), "expected domain wall completely to the left"
 
     def test_quadratic_potential_minimized_correctly(self):
         # As ever, the linear term is irrelevant.
@@ -94,25 +85,19 @@ class TestSingleFieldPotential(unittest.TestCase):
             J=potential_weights.quadratic_biases
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-        bitstrings_to_energies = {
-            minimization.variable.as_bitstring(
-                spin_variable_names=test_field.binary_variable_names,
-                spin_mapping=s
-            ): e
-            for s, e in [(d.sample, d.energy) for d in lowest_energy.data()]
-        }
 
-        self.assertEqual(
-            1,
-            len(bitstrings_to_energies),
-            "expected only one minimum"
+        bitstrings_to_energies = (
+            minimization.variable.bitstrings_to_energies(
+                binary_variable_names=test_field.binary_variable_names,
+                sample_set=lowest_energy
+            )
         )
+
+        assert 1 == len(bitstrings_to_energies), "expected only one minimum"
         actual_solution_bitstring = next(iter(bitstrings_to_energies.keys()))
-        self.assertEqual(
-            "11111100",
-            actual_solution_bitstring,
-            "expected 5 1s between fixed 1st bit and domain wall"
-        )
+        assert (
+            "11111100" == actual_solution_bitstring
+        ), "expected 5 1s between fixed 1st bit and domain wall"
 
     def _for_single_test_field(
             self,
@@ -140,7 +125,7 @@ class TestSingleFieldPotential(unittest.TestCase):
 
         end_weight = 10.0
         alignment_weight = 3.5
-        domain_wall_weights = test_field.domain_wall_weights(
+        domain_wall_weights = test_field.weights_for_domain_wall(
                 end_spin_weight=end_weight,
                 spin_alignment_weight=alignment_weight
             )
@@ -153,7 +138,3 @@ class TestSingleFieldPotential(unittest.TestCase):
             single_field=test_field
         )
         return (test_field, domain_wall_weights, potential_weights)
-
-
-if __name__ == "__main__":
-    unittest.main()

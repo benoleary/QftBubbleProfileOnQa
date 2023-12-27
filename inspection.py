@@ -36,13 +36,10 @@ def print_bitstrings(title_message: str, sample_set: SampleSet):
     )
     print(
         "bitstrings in above variable order to energies =\n",
-        {
-                minimization.variable.as_bitstring(
-                    spin_variable_names=sample_set.variables,
-                    spin_mapping=s
-                ): e
-                for s, e in [(d.sample, d.energy) for d in sample_set.data()]
-        }
+        minimization.variable.bitstrings_to_energies(
+            binary_variable_names=sample_set.variables,
+            sample_set=sample_set
+        )
     )
 
 def inspect_single_chain_for_single_field():
@@ -54,7 +51,7 @@ def inspect_single_chain_for_single_field():
     )
     end_weight = 10.0
     alignment_weight = 3.5
-    spin_biases = test_field.domain_wall_weights(
+    spin_biases = test_field.weights_for_domain_wall(
             end_spin_weight=end_weight,
             spin_alignment_weight=alignment_weight
         )

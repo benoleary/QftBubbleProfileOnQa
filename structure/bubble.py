@@ -93,7 +93,7 @@ class BubbleProfile:
         previous_profile = None
         for profile_at_point in self.fields_at_points:
             calculated_biases.add(
-                profile_at_point.first_field.domain_wall_weights(
+                profile_at_point.first_field.weights_for_domain_wall(
                     end_spin_weight=domain_end_weight,
                     spin_alignment_weight=domain_wall_alignment_weight
                 )

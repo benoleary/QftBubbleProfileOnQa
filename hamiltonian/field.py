@@ -42,17 +42,18 @@ class FieldAtPoint:
         ]
         self.field_step_in_GeV = field_step_in_GeV
 
-    def domain_wall_weights(
+    def weights_for_domain_wall(
             self,
             *,
             end_spin_weight: float,
             spin_alignment_weight: float
         ) -> BiasAccumulator:
         """
-        This returns the weights in the form for sample_ising: a dict of linear
-        biases, which could be represented by a vector, and a dict of quadratic
-        biases, which could be represented as an upper-triangular matrix of
-        correlation weights, with zeros on the diagonal.
+        This returns the weights to ensure that the spins are valid for the
+        Ising-chain domain wall model, in the form for sample_ising: a dict of
+        linear biases, which could be represented by a vector, and a dict of
+        quadratic biases, which could be represented as an upper-triangular
+        matrix of correlation weights, with zeros on the diagonal.
         """
         # First, we set the weights to fix the ends so that there is a domain of
         # 1s from the first index and a domain of 0s ending at the last index.
@@ -61,7 +62,7 @@ class FieldAtPoint:
         # spin to be |0> which multiplies its weight by +1.
         first_variable = self.binary_variable_names[0]
         last_variable = self.binary_variable_names[-1]
-        model_biases = BiasAccumulator(
+        spin_biases = BiasAccumulator(
             initial_linears={
                 first_variable: end_spin_weight,
                 last_variable: -end_spin_weight
@@ -74,8 +75,35 @@ class FieldAtPoint:
         # contribution to the objective function.
         lower_variable = first_variable
         for higher_variable in self.binary_variable_names[1:]:
-            model_biases.add_quadratics({
+            spin_biases.add_quadratics({
                 (lower_variable, higher_variable): -spin_alignment_weight
             })
             lower_variable = higher_variable
-        return model_biases
+        return spin_biases
+
+    def weights_for_fixed_value(
+            self,
+            *,
+            fixing_weight: float,
+            number_of_down_spins: int
+        ) -> BiasAccumulator:
+        """
+        This returns the weights to fix the spins so that there are
+        number_of_down_spins |1>s. Negative numbers can be given to instead
+        specify -number_of_down_spins |0>s, similar to negative indices in a
+        Python array.
+        """
+        spin_biases = BiasAccumulator(
+            initial_linears={
+                binary_variable_name: fixing_weight
+                for binary_variable_name
+                in self.binary_variable_names[:number_of_down_spins]
+            }
+        )
+        spin_biases.add_linears({
+                binary_variable_name: -fixing_weight
+                for binary_variable_name
+                in self.binary_variable_names[number_of_down_spins:]
+            }
+        )
+        return spin_biases

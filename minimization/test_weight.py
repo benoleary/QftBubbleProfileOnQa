@@ -1,7 +1,6 @@
-import unittest
 from minimization.weight import BiasAccumulator
 
-class TestBiasAccumulator(unittest.TestCase):
+class TestBiasAccumulator():
     def test_linears_accumulate_correctly(self):
         test_accumulator = BiasAccumulator()
         # We use numbers which will have exact representations in binary so that
@@ -14,10 +13,7 @@ class TestBiasAccumulator(unittest.TestCase):
         expected_linears = {
             "a": 19.0, "b": 28.0, "c": 25.0, "d": -2.0, "e": -13.0
         }
-        self.assertEqual(
-            expected_linears,
-            test_accumulator.linear_biases
-        )
+        assert expected_linears == test_accumulator.linear_biases
 
     def test_quadratics_accumulate_correctly(self):
         test_accumulator = BiasAccumulator()
@@ -36,11 +32,4 @@ class TestBiasAccumulator(unittest.TestCase):
             ("a2", "b2"): -5.0,
             ("c1", "c2"): 46.0
         }
-        self.assertEqual(
-            expected_quadratics,
-            test_accumulator.quadratic_biases
-        )
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert expected_quadratics == test_accumulator.quadratic_biases
