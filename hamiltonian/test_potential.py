@@ -153,3 +153,7 @@ class TestSingleFieldPotential(unittest.TestCase):
             single_field=test_field
         )
         return (test_field, domain_wall_weights, potential_weights)
+
+
+if __name__ == "__main__":
+    unittest.main()
