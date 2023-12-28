@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<configuration>
+    <first_field_name>f</first_field_name>
+    <number_of_spatial_steps>5</number_of_spatial_steps>
+    <spatial_step_in_inverse_GeV>5</spatial_step_in_inverse_GeV>
+    <field_step_in_GeV>1</field_step_in_GeV>
+    <potential_in_quartic_GeV_per_field_step>
+        0.0;
+        33051430.96039998;
+        118655234.69439992;
+        238134261.2964;
+        375008672.6144;
+        514995942.25;
+        646010855.5583999;
+        758165509.6483998;
+        843769313.3824;
+        897328987.3764;
+        915548564.0;
+        897329387.3764;
+        843770113.3824;
+        758166709.6483998;
+        646012455.5584002;
+        514997942.25;
+        375011072.61439985;
+        238137061.2964;
+        118658434.69439992;
+        33055030.960400056;
+        4000.0
+    </potential_in_quartic_GeV_per_field_step>
+</configuration>
