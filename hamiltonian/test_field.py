@@ -131,7 +131,13 @@ class TestFieldAtPoint():
                 (2, "110000"),
                 (3, "111000"),
                 (4, "111100"),
-                (5, "111110")
+                (5, "111110"),
+                # We also test the negative input convention.
+                (-1, "111110"),
+                (-2, "111100"),
+                (-3, "111000"),
+                (-4, "110000"),
+                (-5, "100000")
             ]
         )
     def test_fixing_value(self, number_of_down_spins, expected_bitstring):
@@ -157,19 +163,31 @@ class TestFieldAtPoint():
         expected_linear_weights = {
             "t_x_0": fixing_weight,
             "t_x_1": (
-                fixing_weight if number_of_down_spins >= 2
+                fixing_weight if (
+                    number_of_down_spins >= 2
+                    or 0 > number_of_down_spins >= -4
+                )
                 else -fixing_weight
             ),
             "t_x_2": (
-                fixing_weight if number_of_down_spins >= 3
+                fixing_weight if (
+                    number_of_down_spins >= 3
+                    or 0 > number_of_down_spins >= -3
+                )
                 else -fixing_weight
             ),
             "t_x_3": (
-                fixing_weight if number_of_down_spins >= 4
+                fixing_weight if (
+                    number_of_down_spins >= 4
+                    or 0 > number_of_down_spins >= -2
+                )
                 else -fixing_weight
             ),
             "t_x_4": (
-                fixing_weight if number_of_down_spins >= 5
+                fixing_weight if (
+                    number_of_down_spins >= 5
+                    or number_of_down_spins == -1
+                )
                 else -fixing_weight
             ),
             "t_x_5": -fixing_weight
