@@ -1,6 +1,6 @@
 from dwave.system import DWaveSampler, EmbeddingComposite
 import dwave.inspector
-from dimod import ExactSolver, SampleSet
+from dimod import ExactSolver, Sampler, SampleSet, SimulatedAnnealingSampler
 import minimization.variable
 from minimization.weight import BiasAccumulator
 from configuration.configuration import DiscreteConfiguration
@@ -14,7 +14,8 @@ def get_sample(
         *,
         spin_biases: BiasAccumulator,
         message_for_Leap: str = None,
-        number_of_shots: int = 100
+        number_of_shots: int = 100,
+        local_sampler: Sampler = None
     ) -> SampleSet:
     if message_for_Leap:
         return EmbeddingComposite(DWaveSampler()).sample_ising(
@@ -22,6 +23,11 @@ def get_sample(
             J=spin_biases.quadratic_biases,
             num_reads=number_of_shots,
             label=message_for_Leap
+        )
+    if local_sampler:
+        return local_sampler.sample_ising(
+            h=spin_biases.linear_biases,
+            J=spin_biases.quadratic_biases
         )
     return ExactSolver().sample_ising(
         h=spin_biases.linear_biases,
@@ -65,14 +71,12 @@ def inspect_single_chain_for_single_field():
     print(sampling_result)
 
 def flat_and_zigzag_from_kinetic_term(is_online: bool):
-    number_of_potential_values = 5
-    discretized_potential = [0.0 for f in range(number_of_potential_values)]
     test_configuration = DiscreteConfiguration(
         first_field_name="f",
         number_of_spatial_steps=2,
         spatial_step_in_inverse_GeV=1.0,
         field_step_in_GeV=1.0,
-        potential_in_quartic_GeV_per_field_step=discretized_potential
+        potential_in_quartic_GeV_per_field_step=[0.0 for _ in range(5)]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
@@ -126,5 +130,33 @@ def flat_and_zigzag_from_kinetic_term(is_online: bool):
         dwave.inspector.show(penalizing_kinetic_result)
         print(penalizing_kinetic_result)
 
+def low_resolution_single_field_with_linear_potential(is_online: bool):
+    test_configuration = DiscreteConfiguration(
+        first_field_name="f",
+        number_of_spatial_steps=4,
+        spatial_step_in_inverse_GeV=1.0,
+        field_step_in_GeV=1.0,
+        potential_in_quartic_GeV_per_field_step=[0.6 * f for f in range(5)]
+    )
+    test_bubble_profile = BubbleProfile(test_configuration)
+
+    full_result = get_sample(
+        spin_biases=test_bubble_profile.spin_biases,
+        message_for_Leap=(
+            "Low resolution single field with linear potential" if is_online
+            else None
+        ),
+        local_sampler=SimulatedAnnealingSampler()
+    )
+    print_bitstrings(
+        "lowest energies:",
+        full_result.lowest(atol=100.0)
+    )
+
+    if is_online:
+        dwave.inspector.show(full_result)
+        print(full_result)
+
 # inspect_single_chain_for_single_field()
-flat_and_zigzag_from_kinetic_term(True)
+# flat_and_zigzag_from_kinetic_term(True)
+low_resolution_single_field_with_linear_potential(False)
