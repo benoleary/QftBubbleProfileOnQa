@@ -1,5 +1,6 @@
 from minimization.weight import BiasAccumulator
 
+
 class TestBiasAccumulator():
     def test_linears_accumulate_correctly(self):
         test_accumulator = BiasAccumulator()

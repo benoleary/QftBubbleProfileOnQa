@@ -8,6 +8,7 @@ from structure.bubble import BubbleProfile
 from hamiltonian.field import FieldAtPoint
 import hamiltonian.potential
 
+
 class TestSingleFieldPotential():
     # In this case, the linear term is irrelevant.
     def test_proportional_to_field_value(self):

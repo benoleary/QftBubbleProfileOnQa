@@ -8,7 +8,7 @@ import hamiltonian.kinetic
 
 _field_step_in_GeV = 7.0
 _radius_step_in_inverse_GeV = 0.25
-    # The weight should be (1/8) * 7^2 * 4^2 = (49 * 2) = 98
+# The weight should be (1/8) * 7^2 * 4^2 = (49 * 2) = 98
 _absolute_expected_weight = 98.0
 
 
@@ -18,7 +18,8 @@ class TestKinetic():
         This tests that the correct weights are generated using an almost
         minimal number of spins for the fields.
         """
-        # Each field should have 3 valid bitstrings: |1000>, |1100>, and |1110>.
+        # Each field should have three valid bitstrings:
+        # |1000>, |1100>, and |1110>.
         lower_radius_field, upper_radius_field = self._set_up_fields(3)
         actual_weights = hamiltonian.kinetic.weights_for_difference(
             at_smaller_radius=lower_radius_field,
@@ -73,7 +74,7 @@ class TestKinetic():
         This tests that the correct weights are generated using a small but not
         minimal number of spins for the fields
         """
-        # Each field should have 4 valid bitstrings:
+        # Each field should have four valid bitstrings:
         # |10000>, |11000>, |11100>, and |11110>.
         lower_radius_field, upper_radius_field = self._set_up_fields(4)
         actual_weights = hamiltonian.kinetic.weights_for_difference(
@@ -151,8 +152,8 @@ class TestKinetic():
         values.
         """
         lower_radius_field, upper_radius_field = self._set_up_fields(4)
-        # The weights from differences should go up to 0.5 * (4 * 7.0)^2 * 3^2
-        # = 9 * 384 = 3456
+        # The weights from differences should go up to
+        # 0.5 * (4 * 7.0)^2 * 3^2 = 9 * 384 = 3456
         # so the ICDW weights need to be significantly larger than that.
         end_weight = 10000.0
         alignment_weight = 5000.0
@@ -201,12 +202,12 @@ class TestKinetic():
         # It should have energy
         # -2 * end_weight (from the first spins of each field)
         # + 2 * alignment_weight (from the domain wall of each field)
-        # - 2 * 3 * alignment_weight (from the 3 pairs of aligned neighboring
-        # |0>s in each field)
+        # - 2 * 3 * alignment_weight (from the three pairs of aligned
+        # neighboring |0>s in each field)
         # - 2 * end_weight (from the last spin of each field)
-        # = -2 * (2 * end_weight + 2 * alignment_weight)
+        # = -2 * ((2 * end_weight) + (2 * alignment_weight))
         # = -4 * (end_weight + alignment_weight)
-        base_energy =  -4.0 * (end_weight + alignment_weight)
+        base_energy = -4.0 * (end_weight + alignment_weight)
         field_step_squared = _field_step_in_GeV * _field_step_in_GeV
         radius_step_squared = (
             _radius_step_in_inverse_GeV * _radius_step_in_inverse_GeV

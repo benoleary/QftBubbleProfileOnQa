@@ -1,7 +1,9 @@
 from typing import Dict, Optional, Tuple, TypeVar
 
+
 SelfType = TypeVar("SelfType", bound="BiasAccumulator")
 T = TypeVar("T")
+
 
 def _copy_initial(source: Optional[Dict[T, float]]) -> Dict[T, float]:
     if source is None:

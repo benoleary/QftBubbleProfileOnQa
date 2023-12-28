@@ -2,6 +2,7 @@ from typing import List
 from minimization.weight import BiasAccumulator
 from hamiltonian.field import FieldAtPoint
 
+
 def weights_for(
         *,
         potential_in_quartic_GeV_per_field_step: List[float],
