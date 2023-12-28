@@ -1,6 +1,7 @@
 from typing import Callable, Dict, List
 from dimod import SampleSet
 
+
 def name_for_index(
         name_prefix: str,
         maximum_index: int

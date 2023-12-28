@@ -1,6 +1,6 @@
-from typing import List
 from minimization.weight import BiasAccumulator
 from hamiltonian.field import FieldAtPoint
+
 
 def weights_for_difference(
         *,

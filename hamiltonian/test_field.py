@@ -3,6 +3,7 @@ from dimod import ExactSolver
 import minimization.variable
 from hamiltonian.field import FieldAtPoint
 
+
 class TestFieldAtPoint():
     def test_binary_variable_names_constructed_correctly(self):
         test_field = FieldAtPoint(

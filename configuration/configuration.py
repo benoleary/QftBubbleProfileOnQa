@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+
 class DiscreteConfiguration:
     def __init__(
             self,

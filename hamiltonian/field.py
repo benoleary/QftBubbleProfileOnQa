@@ -1,6 +1,7 @@
 import minimization.variable
 from minimization.weight import BiasAccumulator
 
+
 class FieldAtPoint:
     """
     This class represents the strength of a QFT scalar field at a point in
