@@ -28,6 +28,7 @@ class FieldAtPoint:
             raise ValueError("Need a range of at least 2 values for the field")
         self.field_name = field_name
         self.spatial_point_identifier = spatial_point_identifier
+        self.number_of_values_for_field = number_of_values_for_field
         # The variable names are indexed from zero, so if we have say 10 values
         # for the field, we actually index 0 to 9 so use only 1 digit.
         name_function = minimization.variable.name_for_index(
@@ -93,6 +94,21 @@ class FieldAtPoint:
         specify -number_of_down_spins |0>s, similar to negative indices in a
         Python array.
         """
+        if number_of_down_spins == 0:
+            raise ValueError(
+                "Input of 0 (or -0) should set all spins to |1> (or |0>) but"
+                " this would prevent a domain wall"
+            )
+        if number_of_down_spins >= self.number_of_values_for_field + 1:
+            raise ValueError(
+                f"At most {self.number_of_values_for_field} can be set to |1>,"
+                f" {number_of_down_spins} were requested"
+            )
+        if -number_of_down_spins >= self.number_of_values_for_field + 1:
+            raise ValueError(
+                f"At most {self.number_of_values_for_field} can be set to |0>,"
+                f" {-number_of_down_spins} were requested (as negative input)"
+            )
         spin_biases = BiasAccumulator(
             initial_linears={
                 binary_variable_name: fixing_weight
