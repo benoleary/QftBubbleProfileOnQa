@@ -36,3 +36,18 @@ def bitstrings_to_energies(
             ): e
             for s, e in [(d.sample, d.energy) for d in sample_set.data()]
     }
+
+
+def print_bitstrings(title_message: str, sample_set: SampleSet):
+    print(title_message)
+    print(
+        "[v for v in sample_set.variables] = \n",
+        [v for v in sample_set.variables]
+    )
+    print(
+        "bitstrings in above variable order to energies =\n",
+        bitstrings_to_energies(
+            binary_variable_names=sample_set.variables,
+            sample_set=sample_set
+        )
+    )

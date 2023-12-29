@@ -46,6 +46,9 @@ class BubbleProfile:
         The constructor just sets up fields.
         """
         self.configuration = configuration
+        self.maximum_variable_weight = self._get_maximum_variable_weight()
+        self.domain_wall_alignment_weight = 2.0 * self.maximum_variable_weight
+        self.single_spin_fixing_weight = 2.0 * self.domain_wall_alignment_weight
         number_of_values_for_field = configuration.number_of_values_for_field
         spatial_name_function = minimization.variable.name_for_index(
             "r",
@@ -68,9 +71,7 @@ class BubbleProfile:
     def _set_up_weights(self) -> BiasAccumulator:
         # We do the different terms in separate methods so that it is easier to
         # read.
-        calculated_biases = self._get_model_weights(
-            self._get_maximum_variable_weight()
-        )
+        calculated_biases = self._get_model_weights()
         calculated_biases.add(
             self._get_potential_weights(
                 self.configuration.potential_in_quartic_GeV_per_field_step
@@ -101,30 +102,20 @@ class BubbleProfile:
             self.configuration.maximum_weight_difference + maximum_kinetic_term
         )
 
-    def _get_model_weights(
-            self,
-            maximum_variable_weight: float
-        ) -> BiasAccumulator:
-        domain_wall_alignment_weight = 2.0 * maximum_variable_weight
-        single_spin_fixing_weight = 2.0 * domain_wall_alignment_weight
-        calculated_biases = self._get_fixed_center_and_edge_weights(
-            single_spin_fixing_weight
-        )
+    def _get_model_weights(self) -> BiasAccumulator:
+        calculated_biases = self._get_fixed_center_and_edge_weights()
 
         for profile_at_point in self.fields_at_points[1:-1]:
             calculated_biases.add(
                 profile_at_point.first_field.weights_for_domain_wall(
-                    end_spin_weight=single_spin_fixing_weight,
-                    spin_alignment_weight=domain_wall_alignment_weight
+                    end_spin_weight=self.single_spin_fixing_weight,
+                    spin_alignment_weight=self.domain_wall_alignment_weight
                 )
             )
 
         return calculated_biases
 
-    def _get_fixed_center_and_edge_weights(
-            self,
-            single_spin_fixing_weight: float
-        ) -> BiasAccumulator:
+    def _get_fixed_center_and_edge_weights(self) -> BiasAccumulator:
         """
         This only works in the assumption of a single field which is set to
         1000... at the center and ...1110 at the edge, which is why the second
@@ -132,13 +123,13 @@ class BubbleProfile:
         """
         calculated_biases = (
             self.fields_at_points[0].first_field.weights_for_fixed_value(
-                fixing_weight=single_spin_fixing_weight,
+                fixing_weight=self.single_spin_fixing_weight,
                 number_of_down_spins=1
             )
         )
         calculated_biases.add(
             self.fields_at_points[-1].first_field.weights_for_fixed_value(
-                fixing_weight=single_spin_fixing_weight,
+                fixing_weight=self.single_spin_fixing_weight,
                 number_of_down_spins=-1
             )
         )
