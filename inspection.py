@@ -1,52 +1,12 @@
-from dwave.system import DWaveSampler, EmbeddingComposite
 import dwave.inspector
-from dimod import ExactSolver, Sampler, SampleSet, SimulatedAnnealingSampler
+from dimod import ExactSolver, SimulatedAnnealingSampler
+import minimization.sampling
 import minimization.variable
-from minimization.weight import BiasAccumulator
 from configuration.configuration import DiscreteConfiguration
 from structure.bubble import BubbleProfile
 from hamiltonian.field import FieldAtPoint
 import hamiltonian.potential
 
-# This uses the presence or absence of a message for Leap to choose whether or
-# not to sample with the Cloud service.
-def get_sample(
-        *,
-        spin_biases: BiasAccumulator,
-        message_for_Leap: str = None,
-        number_of_shots: int = 100,
-        local_sampler: Sampler = None
-    ) -> SampleSet:
-    if message_for_Leap:
-        return EmbeddingComposite(DWaveSampler()).sample_ising(
-            h=spin_biases.linear_biases,
-            J=spin_biases.quadratic_biases,
-            num_reads=number_of_shots,
-            label=message_for_Leap
-        )
-    if local_sampler:
-        return local_sampler.sample_ising(
-            h=spin_biases.linear_biases,
-            J=spin_biases.quadratic_biases
-        )
-    return ExactSolver().sample_ising(
-        h=spin_biases.linear_biases,
-        J=spin_biases.quadratic_biases
-    )
-
-def print_bitstrings(title_message: str, sample_set: SampleSet):
-    print(title_message)
-    print(
-        "[v for v in sample_set.variables] = \n",
-        [v for v in sample_set.variables]
-    )
-    print(
-        "bitstrings in above variable order to energies =\n",
-        minimization.variable.bitstrings_to_energies(
-            binary_variable_names=sample_set.variables,
-            sample_set=sample_set
-        )
-    )
 
 def inspect_single_chain_for_single_field():
     test_field = FieldAtPoint(
@@ -61,12 +21,16 @@ def inspect_single_chain_for_single_field():
             end_spin_weight=end_weight,
             spin_alignment_weight=alignment_weight
         )
-    sampling_result = get_sample(
+    sampling_result = minimization.sampling.get_sample(
         spin_biases=spin_biases,
-        message_for_Leap="Just a field as a single chain"
+        message_for_Leap="Just a field as a single chain",
+        local_sampler=ExactSolver()
     )
     lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-    print_bitstrings("lowest energies for single field chain:", lowest_energy)
+    minimization.variable.print_bitstrings(
+        "lowest energies for single field chain:",
+        lowest_energy
+    )
     dwave.inspector.show(sampling_result)
     print(sampling_result)
 
@@ -80,13 +44,14 @@ def flat_and_zigzag_from_kinetic_term(is_online: bool):
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
-    penalizing_kinetic_result = get_sample(
+    penalizing_kinetic_result = minimization.sampling.get_sample(
         spin_biases=test_bubble_profile.spin_biases,
         message_for_Leap=(
             "Just kinetic weights expecting flat profile" if is_online else None
-        )
+        ),
+        local_sampler=ExactSolver()
     )
-    print_bitstrings(
+    minimization.variable.print_bitstrings(
         "lowest energies for just kinetic term:",
         penalizing_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
@@ -114,14 +79,15 @@ def flat_and_zigzag_from_kinetic_term(is_online: bool):
     rewarding_kinetic = test_bubble_profile.spin_biases
     rewarding_kinetic.add_quadratics(weights_to_flip_kinetic)
 
-    rewarding_kinetic_result = get_sample(
+    rewarding_kinetic_result = minimization.sampling.get_sample(
         spin_biases=rewarding_kinetic,
         message_for_Leap=(
             "Just kinetic weights expecting zig-zag profile" if is_online
             else None
-        )
+        ),
+        local_sampler=ExactSolver()
     )
-    print_bitstrings(
+    minimization.variable.print_bitstrings(
         "lowest energies for inverted kinetic term:",
         rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
@@ -140,7 +106,7 @@ def low_resolution_single_field_with_linear_potential(is_online: bool):
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
-    full_result = get_sample(
+    full_result = minimization.sampling.get_sample(
         spin_biases=test_bubble_profile.spin_biases,
         message_for_Leap=(
             "Low resolution single field with linear potential" if is_online
@@ -148,7 +114,7 @@ def low_resolution_single_field_with_linear_potential(is_online: bool):
         ),
         local_sampler=SimulatedAnnealingSampler()
     )
-    print_bitstrings(
+    minimization.variable.print_bitstrings(
         "lowest energies:",
         full_result.lowest(atol=100.0)
     )
