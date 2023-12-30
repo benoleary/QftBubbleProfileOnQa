@@ -1,12 +1,13 @@
 from typing import Tuple
 import pytest
-from dimod import ExactSolver
+import minimization.sampling
 import minimization.variable
 from hamiltonian.field import FieldAtPoint
 import hamiltonian.kinetic
 
 
 _field_step_in_GeV = 7.0
+_offset_from_origin_in_GeV = -10.75
 _radius_step_in_inverse_GeV = 0.25
 # The weight should be (1/8) * 7^2 * 4^2 = (49 * 2) = 98
 _absolute_expected_weight = 98.0
@@ -175,10 +176,9 @@ class TestKinetic():
             )
         )
 
-        test_sampler = ExactSolver()
-        sampling_result = test_sampler.sample_ising(
-            h=kinetic_weights.linear_biases,
-            J=kinetic_weights.quadratic_biases
+        sampling_result = minimization.sampling.get_sample(
+            spin_biases=kinetic_weights,
+            sampler_name="exact"
         )
 
         # We grab all the results under the energy which should only happen if
@@ -269,12 +269,14 @@ class TestKinetic():
                 field_name=field_name,
                 spatial_point_identifier="l",
                 number_of_values_for_field=number_of_values_for_field,
-                field_step_in_GeV=_field_step_in_GeV
+                field_step_in_GeV=_field_step_in_GeV,
+                offset_from_origin_in_GeV=_offset_from_origin_in_GeV
             ),
             FieldAtPoint(
                 field_name=field_name,
                 spatial_point_identifier="u",
                 number_of_values_for_field=number_of_values_for_field,
-                field_step_in_GeV=_field_step_in_GeV
+                field_step_in_GeV=_field_step_in_GeV,
+                offset_from_origin_in_GeV=_offset_from_origin_in_GeV
             )
         )

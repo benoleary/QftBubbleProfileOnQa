@@ -9,7 +9,8 @@ class TestBubbleProfile():
             first_field_name="f",
             number_of_spatial_steps=100,
             spatial_step_in_inverse_GeV=1.0,
-            field_step_in_GeV=1.0,
+            first_field_step_in_GeV=1.0,
+            first_field_offset_in_GeV=0.0,
             potential_in_quartic_GeV_per_field_step=[0.0, 1.0, 2.0]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
@@ -30,13 +31,13 @@ class TestBubbleProfile():
         ), "incorrect length(s) for spatial identifiers"
 
     def test_weights_for_monotonic_potential(self):
-        field_step_in_GeV = 1.0
         test_configuration = DiscreteConfiguration(
             first_field_name="f",
             number_of_spatial_steps=4,
             spatial_step_in_inverse_GeV=1.0,
-            field_step_in_GeV=field_step_in_GeV,
-            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3]
+            first_field_step_in_GeV=1.0,
+            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3],
+            first_field_offset_in_GeV=0.0
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spin_biases = test_bubble_profile.spin_biases

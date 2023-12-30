@@ -1,5 +1,4 @@
 import dwave.inspector
-from dimod import ExactSolver, SimulatedAnnealingSampler
 import minimization.sampling
 import minimization.variable
 from configuration.configuration import DiscreteConfiguration
@@ -8,12 +7,13 @@ from hamiltonian.field import FieldAtPoint
 import hamiltonian.potential
 
 
-def inspect_single_chain_for_single_field():
+def inspect_single_chain_for_single_field(sampler_name: str):
     test_field = FieldAtPoint(
         field_name="t",
         spatial_point_identifier="x0",
         number_of_values_for_field=7,
-        field_step_in_GeV=1.0
+        field_step_in_GeV=1.0,
+        offset_from_origin_in_GeV=0.0
     )
     end_weight = 10.0
     alignment_weight = 3.5
@@ -24,7 +24,8 @@ def inspect_single_chain_for_single_field():
     sampling_result = minimization.sampling.get_sample(
         spin_biases=spin_biases,
         message_for_Leap="Just a field as a single chain",
-        local_sampler=ExactSolver()
+        number_of_shots=100,
+        sampler_name=sampler_name
     )
     lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
     minimization.variable.print_bitstrings(
@@ -34,22 +35,22 @@ def inspect_single_chain_for_single_field():
     dwave.inspector.show(sampling_result)
     print(sampling_result)
 
-def flat_and_zigzag_from_kinetic_term(is_online: bool):
+def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     test_configuration = DiscreteConfiguration(
         first_field_name="f",
         number_of_spatial_steps=2,
         spatial_step_in_inverse_GeV=1.0,
-        field_step_in_GeV=1.0,
+        first_field_step_in_GeV=1.0,
+        first_field_offset_in_GeV=0.0,
         potential_in_quartic_GeV_per_field_step=[0.0 for _ in range(5)]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
     penalizing_kinetic_result = minimization.sampling.get_sample(
         spin_biases=test_bubble_profile.spin_biases,
-        message_for_Leap=(
-            "Just kinetic weights expecting flat profile" if is_online else None
-        ),
-        local_sampler=ExactSolver()
+        message_for_Leap="Just kinetic weights expecting flat profile",
+        number_of_shots=100,
+        sampler_name=sampler_name
     )
     minimization.variable.print_bitstrings(
         "lowest energies for just kinetic term:",
@@ -81,48 +82,46 @@ def flat_and_zigzag_from_kinetic_term(is_online: bool):
 
     rewarding_kinetic_result = minimization.sampling.get_sample(
         spin_biases=rewarding_kinetic,
-        message_for_Leap=(
-            "Just kinetic weights expecting zig-zag profile" if is_online
-            else None
-        ),
-        local_sampler=ExactSolver()
+        message_for_Leap="Just kinetic weights expecting zig-zag profile",
+        sampler_name=sampler_name
     )
     minimization.variable.print_bitstrings(
         "lowest energies for inverted kinetic term:",
         rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
 
-    if is_online:
+    if minimization.sampling.is_online_sampler(sampler_name):
         dwave.inspector.show(penalizing_kinetic_result)
         print(penalizing_kinetic_result)
 
-def low_resolution_single_field_with_linear_potential(is_online: bool):
+def low_resolution_single_field_with_linear_potential(sampler_name: str):
     test_configuration = DiscreteConfiguration(
         first_field_name="f",
         number_of_spatial_steps=4,
         spatial_step_in_inverse_GeV=1.0,
-        field_step_in_GeV=1.0,
+        first_field_step_in_GeV=1.0,
+        first_field_offset_in_GeV=0.0,
         potential_in_quartic_GeV_per_field_step=[0.6 * f for f in range(5)]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
     full_result = minimization.sampling.get_sample(
         spin_biases=test_bubble_profile.spin_biases,
-        message_for_Leap=(
-            "Low resolution single field with linear potential" if is_online
-            else None
-        ),
-        local_sampler=SimulatedAnnealingSampler()
+        message_for_Leap="Low resolution single field with linear potential",
+        number_of_shots=100,
+        sampler_name=sampler_name
     )
     minimization.variable.print_bitstrings(
         "lowest energies:",
         full_result.lowest(atol=100.0)
     )
 
-    if is_online:
+    if sampler_name == "dwave":
         dwave.inspector.show(full_result)
         print(full_result)
 
-# inspect_single_chain_for_single_field()
-# flat_and_zigzag_from_kinetic_term(True)
-low_resolution_single_field_with_linear_potential(False)
+
+if __name__ == "__main__":
+    # inspect_single_chain_for_single_field("dwave")
+    # flat_and_zigzag_from_kinetic_term("dwave")
+    low_resolution_single_field_with_linear_potential("kerberos")

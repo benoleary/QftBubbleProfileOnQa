@@ -1,30 +1,51 @@
+from typing import Dict
 from dwave.system import DWaveSampler, EmbeddingComposite
-from dimod import Sampler, SampleSet
+from hybrid.reference.kerberos import KerberosSampler
+from dimod import ExactSolver, Sampler, SampleSet, SimulatedAnnealingSampler
 from minimization.weight import BiasAccumulator
 
 
-# This uses the presence or absence of a message for Leap to choose whether or
-# not to sample with the Cloud service.
+def get_sampler(sampler_name: str) -> Sampler:
+    if sampler_name == "dwave":
+        return EmbeddingComposite(DWaveSampler())
+    if sampler_name == "kerberos":
+        return KerberosSampler()
+    if sampler_name == "exact":
+        return ExactSolver()
+    return SimulatedAnnealingSampler()
+
+
 def get_sample(
         *,
         spin_biases: BiasAccumulator,
         message_for_Leap: str = None,
         number_of_shots: int = 100,
-        local_sampler: Sampler = None
+        sampler_name: str
     ) -> SampleSet:
-    if message_for_Leap:
-        return EmbeddingComposite(DWaveSampler()).sample_ising(
+    chosen_sampler = get_sampler(sampler_name)
+    if message_for_Leap and (sampler_name == "dwave"):
+        return chosen_sampler.sample_ising(
             h=spin_biases.linear_biases,
             J=spin_biases.quadratic_biases,
             num_reads=number_of_shots,
             label=message_for_Leap
         )
-    if local_sampler:
-        return local_sampler.sample_ising(
+    if "kerberos" == sampler_name:
+        return chosen_sampler.sample_ising(
             h=spin_biases.linear_biases,
-            J=spin_biases.quadratic_biases
+            J=spin_biases.quadratic_biases,
+            max_iter=10
         )
-
-    raise ValueError(
-        "No message for Leap and no local sampler provided, so cannot run."
+    return chosen_sampler.sample_ising(
+        h=spin_biases.linear_biases,
+        J=spin_biases.quadratic_biases
     )
+
+def get_lowest_sample_from_set(sample_set: SampleSet) -> Dict[str, float]:
+    lowest_energy_sample, = next(
+        sample_set.lowest().data(
+            fields=["sample"],
+            sorted_by="energy"
+        )
+    )
+    return lowest_energy_sample
