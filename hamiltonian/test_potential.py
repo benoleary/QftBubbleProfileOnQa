@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 import pytest
-from dimod import ExactSolver
+import minimization.sampling
 import minimization.variable
 from minimization.weight import BiasAccumulator
 from configuration.configuration import DiscreteConfiguration
@@ -14,6 +14,7 @@ class TestSingleFieldPotential():
     def test_proportional_to_field_value(self):
         def linear_potential(field_value: int):
             return (2.5 * field_value) + 10.0
+
         _, _, actual_weights = self._for_single_test_field(
             single_field_potential=linear_potential,
             number_of_potential_values=5
@@ -41,6 +42,7 @@ class TestSingleFieldPotential():
         # In this case as well, the linear term is irrelevant.
         def linear_potential(field_value: int):
             return (2.0 * field_value) + 20.0
+
         test_field, domain_wall_weights, potential_weights = (
             self._for_single_test_field(
                 single_field_potential=linear_potential,
@@ -49,10 +51,9 @@ class TestSingleFieldPotential():
         )
         potential_weights.add(domain_wall_weights)
 
-        test_sampler = ExactSolver()
-        sampling_result = test_sampler.sample_ising(
-            h=potential_weights.linear_biases,
-            J=potential_weights.quadratic_biases
+        sampling_result = minimization.sampling.get_sample(
+            spin_biases=potential_weights,
+            sampler_name="exact"
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
 
@@ -73,6 +74,7 @@ class TestSingleFieldPotential():
         # As ever, the linear term is irrelevant.
         def quadratic_potential(field_value: int):
             return (2.5 * (field_value - 5) * (field_value - 5)) + 10.0
+
         test_field, domain_wall_weights, potential_weights = (
             self._for_single_test_field(
                 single_field_potential=quadratic_potential,
@@ -80,10 +82,10 @@ class TestSingleFieldPotential():
             )
         )
         potential_weights.add(domain_wall_weights)
-        test_sampler = ExactSolver()
-        sampling_result = test_sampler.sample_ising(
-            h=potential_weights.linear_biases,
-            J=potential_weights.quadratic_biases
+
+        sampling_result = minimization.sampling.get_sample(
+            spin_biases=potential_weights,
+            sampler_name="exact"
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
 
@@ -113,7 +115,8 @@ class TestSingleFieldPotential():
             first_field_name="T",
             number_of_spatial_steps=1,
             spatial_step_in_inverse_GeV=1.0,
-            field_step_in_GeV=1.0,
+            first_field_step_in_GeV=1.0,
+            first_field_offset_in_GeV=0.0,
             potential_in_quartic_GeV_per_field_step=discretized_potential
         )
 

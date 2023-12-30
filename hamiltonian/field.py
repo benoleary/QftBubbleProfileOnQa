@@ -1,3 +1,4 @@
+from typing import Dict
 import minimization.variable
 from minimization.weight import BiasAccumulator
 
@@ -17,7 +18,8 @@ class FieldAtPoint:
             field_name: str,
             spatial_point_identifier: str,
             number_of_values_for_field: int,
-            field_step_in_GeV: float
+            field_step_in_GeV: float,
+            offset_from_origin_in_GeV: float
         ):
         """
         The constructor just sets up the names for the spin variables, since the
@@ -43,6 +45,7 @@ class FieldAtPoint:
             name_function(i) for i in range(number_of_values_for_field + 1)
         ]
         self.field_step_in_GeV = field_step_in_GeV
+        self.offset_from_origin_in_GeV = offset_from_origin_in_GeV
 
     def weights_for_domain_wall(
             self,
@@ -124,3 +127,12 @@ class FieldAtPoint:
             }
         )
         return spin_biases
+
+    def in_GeV(self, spins_from_sample: Dict[str, int]):
+        # This adds field_step_in_GeV to offset_from_origin_in_GeV for every |1>
+        # beyond the fixed first one (and we ignore the fixed last |0>).
+        total_in_GeV = self.offset_from_origin_in_GeV
+        for variable_name in self.binary_variable_names[1:-1]:
+            if spins_from_sample.get(variable_name, 0) < 0:
+                total_in_GeV += self.field_step_in_GeV
+        return total_in_GeV

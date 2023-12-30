@@ -162,3 +162,7 @@ cython_debug/
 # Unit test results end up here, if I ever test as it would happen on GitHub.
 junit/
 
+**/*.csv
+**/*.png
+**/temporary_gnuplot_input.*
+

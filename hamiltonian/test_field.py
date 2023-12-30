@@ -1,5 +1,5 @@
 import pytest
-from dimod import ExactSolver
+import minimization.sampling
 import minimization.variable
 from hamiltonian.field import FieldAtPoint
 
@@ -7,29 +7,31 @@ from hamiltonian.field import FieldAtPoint
 class TestFieldAtPoint():
     def test_binary_variable_names_constructed_correctly(self):
         test_field = FieldAtPoint(
-                field_name="t",
-                spatial_point_identifier="x0",
-                number_of_values_for_field=2,
-                field_step_in_GeV=1.0
-            )
+            field_name="t",
+            spatial_point_identifier="x0",
+            number_of_values_for_field=2,
+            field_step_in_GeV=1.0,
+            offset_from_origin_in_GeV=0.0
+        )
         assert (
             ["t_x0_0", "t_x0_1", "t_x0_2"] == test_field.binary_variable_names
         ), "incorrect names for spin variables"
 
     def test_weights_for_domain_wall_given_correctly(self):
         test_field = FieldAtPoint(
-                field_name="t",
-                spatial_point_identifier="x",
-                number_of_values_for_field=3,
-                field_step_in_GeV=1.0
-            )
+            field_name="t",
+            spatial_point_identifier="x",
+            number_of_values_for_field=3,
+            field_step_in_GeV=1.0,
+            offset_from_origin_in_GeV=0.0
+        )
         end_weight = 10.0
         alignment_weight = 3.5
 
         actual_weights = test_field.weights_for_domain_wall(
-                end_spin_weight=end_weight,
-                spin_alignment_weight=alignment_weight
-            )
+            end_spin_weight=end_weight,
+            spin_alignment_weight=alignment_weight
+        )
 
         # All the spins are either |1> which multiplies its weight by -1 or |0>
         # which multiplies its weight by +1.
@@ -69,23 +71,23 @@ class TestFieldAtPoint():
         ), "incorrect weights for quadratic biases"
 
     def test_all_valid_strengths_for_only_domain_wall_conditions(self):
-        test_sampler = ExactSolver()
         test_field = FieldAtPoint(
-                field_name="t",
-                spatial_point_identifier="x0",
-                number_of_values_for_field=7,
-                field_step_in_GeV=1.0
-            )
+            field_name="t",
+            spatial_point_identifier="x0",
+            number_of_values_for_field=7,
+            field_step_in_GeV=1.0,
+            offset_from_origin_in_GeV=0.0
+        )
         end_weight = 10.0
         alignment_weight = 3.5
         spin_biases = test_field.weights_for_domain_wall(
-                end_spin_weight=end_weight,
-                spin_alignment_weight=alignment_weight
-            )
+            end_spin_weight=end_weight,
+            spin_alignment_weight=alignment_weight
+        )
 
-        sampling_result = test_sampler.sample_ising(
-            h=spin_biases.linear_biases,
-            J=spin_biases.quadratic_biases
+        sampling_result = minimization.sampling.get_sample(
+            spin_biases=spin_biases,
+            sampler_name="exact"
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (
@@ -103,7 +105,7 @@ class TestFieldAtPoint():
         # - 6 * alignment_weight (from the 6 pairs of aligned neighboring |0>s)
         # -end_weight (from the last spin)
         # = -2 * end_weight - 5 * alignment_weight
-        expected_energy = -2.0 * end_weight - 5.0 * alignment_weight
+        expected_energy = (-2.0 * end_weight) - (5.0 * alignment_weight)
         # The expected lowest energy states all start with 1 and end with 0, and
         # we expect the seven combinations where there are only 1s on the left
         # and 0s on the right.
@@ -142,13 +144,13 @@ class TestFieldAtPoint():
             ]
         )
     def test_fixing_value(self, number_of_down_spins, expected_bitstring):
-        test_sampler = ExactSolver()
         test_field = FieldAtPoint(
-                field_name="t",
-                spatial_point_identifier="x",
-                number_of_values_for_field=5,
-                field_step_in_GeV=1.0
-            )
+            field_name="t",
+            spatial_point_identifier="x",
+            number_of_values_for_field=5,
+            field_step_in_GeV=1.0,
+            offset_from_origin_in_GeV=0.0
+        )
         fixing_weight = 11.0
         # With 5 possible values for the field, there are 6 spins (the first and
         # last are fixed, and there are 5 values for 0 to 4 of the middle 4
@@ -204,9 +206,9 @@ class TestFieldAtPoint():
             {} == spin_biases.quadratic_biases
         ), "incorrect weights for quadratic biases"
 
-        sampling_result = test_sampler.sample_ising(
-            h=spin_biases.linear_biases,
-            J=spin_biases.quadratic_biases
+        sampling_result = minimization.sampling.get_sample(
+            spin_biases=spin_biases,
+            sampler_name="exact"
         )
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (

@@ -12,8 +12,10 @@ def name_for_index(
         return f"{name_prefix}{numeric_part}"
     return specific_function
 
+
 def spin_to_zero_or_one(spin_value: int) -> str:
     return "0" if spin_value > 0 else "1"
+
 
 def as_bitstring(
         *,
@@ -23,6 +25,7 @@ def as_bitstring(
     return "".join(
         [spin_to_zero_or_one(spin_mapping[n]) for n in spin_variable_names]
     )
+
 
 def bitstrings_to_energies(
         *,
