@@ -39,6 +39,7 @@ def main():
         first_field_name=xml_str("first_field_name"),
         number_of_spatial_steps=xml_int("number_of_spatial_steps"),
         spatial_step_in_inverse_GeV=xml_float("spatial_step_in_inverse_GeV"),
+        volume_exponent=xml_int("volume_exponent"),
         first_field_step_in_GeV=xml_float("first_field_step_in_GeV"),
         first_field_offset_in_GeV=xml_float("first_field_offset_in_GeV"),
         potential_in_quartic_GeV_per_field_step=[

@@ -40,6 +40,7 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         first_field_name="f",
         number_of_spatial_steps=2,
         spatial_step_in_inverse_GeV=1.0,
+        volume_exponent=0,
         first_field_step_in_GeV=1.0,
         first_field_offset_in_GeV=0.0,
         potential_in_quartic_GeV_per_field_step=[0.0 for _ in range(5)]
@@ -99,6 +100,7 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
         first_field_name="f",
         number_of_spatial_steps=4,
         spatial_step_in_inverse_GeV=1.0,
+        volume_exponent=0,
         first_field_step_in_GeV=1.0,
         first_field_offset_in_GeV=0.0,
         potential_in_quartic_GeV_per_field_step=[0.6 * f for f in range(5)]
@@ -124,4 +126,4 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
 if __name__ == "__main__":
     # inspect_single_chain_for_single_field("dwave")
     # flat_and_zigzag_from_kinetic_term("dwave")
-    low_resolution_single_field_with_linear_potential("kerberos")
+    low_resolution_single_field_with_linear_potential("default")

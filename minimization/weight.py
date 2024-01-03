@@ -5,10 +5,14 @@ SelfType = TypeVar("SelfType", bound="BiasAccumulator")
 T = TypeVar("T")
 
 
-def _copy_initial(source: Optional[Dict[T, float]]) -> Dict[T, float]:
-    if source is None:
+def _copy_initial(
+        *,
+        source_mapping: Optional[Dict[T, float]],
+        scaling_factor: float
+    ) -> Dict[T, float]:
+    if source_mapping is None:
         return {}
-    return {k: v for k, v in source.items()}
+    return {k: (scaling_factor * v) for k, v in source_mapping.items()}
 
 
 class BiasAccumulator:
@@ -22,8 +26,14 @@ class BiasAccumulator:
             initial_linears: Dict[str, float] = None,
             initial_quadratics: Dict[Tuple[str, str], float] = None
         ):
-        self.linear_biases = _copy_initial(initial_linears)
-        self.quadratic_biases = _copy_initial(initial_quadratics)
+        self.linear_biases = _copy_initial(
+            source_mapping=initial_linears,
+            scaling_factor=1.0
+        )
+        self.quadratic_biases = _copy_initial(
+            source_mapping=initial_quadratics,
+            scaling_factor=1.0
+        )
 
     def add_linears(self, weights_to_add: Dict[str, float]):
         for k, v in weights_to_add.items():
@@ -36,3 +46,15 @@ class BiasAccumulator:
     def add(self, other: SelfType):
         self.add_linears(other.linear_biases)
         self.add_quadratics(other.quadratic_biases)
+
+    def create_scaled_copy(self, scaling_factor: float) -> SelfType:
+        return BiasAccumulator(
+            initial_linears=_copy_initial(
+                source_mapping=self.linear_biases,
+                scaling_factor=scaling_factor
+            ),
+            initial_quadratics=_copy_initial(
+                source_mapping=self.quadratic_biases,
+                scaling_factor=scaling_factor
+            )
+        )
