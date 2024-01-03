@@ -32,9 +32,9 @@ def main():
     potential_element = input_xml_root.find(
         "potential_in_quartic_GeV_per_field_step"
     )
-    print(f"potential_element = {potential_element}")
     if potential_element is None:
         raise ValueError("No XML element for potential")
+
     input_configuration = DiscreteConfiguration(
         first_field_name=xml_str("first_field_name"),
         number_of_spatial_steps=xml_int("number_of_spatial_steps"),
@@ -51,10 +51,7 @@ def main():
     )
     bubble_profile = BubbleProfile(input_configuration)
 
-    is_online = minimization.sampling.is_online_sampler(
-        input_configuration.sampler_name
-    )
-    if is_online:
+    if input_configuration.sampler_name == "dwave":
         message_for_Leap = (
             f"QftBubbleProfileOnQa for input file {parsed_arguments.input_file}"
         )
