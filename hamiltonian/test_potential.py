@@ -115,6 +115,7 @@ class TestSingleFieldPotential():
             first_field_name="T",
             number_of_spatial_steps=1,
             spatial_step_in_inverse_GeV=1.0,
+            volume_exponent=0,
             first_field_step_in_GeV=1.0,
             first_field_offset_in_GeV=0.0,
             potential_in_quartic_GeV_per_field_step=discretized_potential

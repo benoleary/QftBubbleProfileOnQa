@@ -13,6 +13,7 @@ class DiscreteConfiguration:
             second_field_offset_in_GeV: Optional[float] = None,
             number_of_spatial_steps: int,
             spatial_step_in_inverse_GeV: float,
+            volume_exponent: int,
             potential_in_quartic_GeV_per_field_step: List[float],
             sampler_name: Optional[str] = None,
             number_of_shots: Optional[int] = None,
@@ -29,6 +30,7 @@ class DiscreteConfiguration:
         self.second_field_offset_in_GeV = second_field_offset_in_GeV
         self.number_of_spatial_steps = number_of_spatial_steps
         self.spatial_step_in_inverse_GeV = spatial_step_in_inverse_GeV
+        self.volume_exponent = volume_exponent
 
         # TODO: account for second field in all the following, down to
         # self.maximum_weight_difference

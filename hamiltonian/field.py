@@ -58,7 +58,9 @@ class FieldAtPoint:
         Ising-chain domain wall model, in the form for sample_ising: a dict of
         linear biases, which could be represented by a vector, and a dict of
         quadratic biases, which could be represented as an upper-triangular
-        matrix of correlation weights, with zeros on the diagonal.
+        matrix of correlation weights, with zeros on the diagonal. (Apparently
+        it is not necessary that the dict is "upper-triangular", the middleware
+        seems to cope.)
         """
         # First, we set the weights to fix the ends so that there is a domain of
         # 1s from the first index and a domain of 0s ending at the last index.
@@ -121,11 +123,10 @@ class FieldAtPoint:
             }
         )
         spin_biases.add_linears({
-                binary_variable_name: -fixing_weight
-                for binary_variable_name
-                in self.binary_variable_names[number_of_down_spins:]
-            }
-        )
+            binary_variable_name: -fixing_weight
+            for binary_variable_name
+            in self.binary_variable_names[number_of_down_spins:]
+        })
         return spin_biases
 
     def in_GeV(self, spins_from_sample: Dict[str, int]):

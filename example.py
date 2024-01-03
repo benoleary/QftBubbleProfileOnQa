@@ -45,6 +45,7 @@ def create_input():
         "spatial_step_in_inverse_GeV",
         str(spatial_step_in_inverse_GeV)
     )
+    _add(root_element, "volume_exponent", "0")
     _add(
         root_element,
         "potential_in_quartic_GeV_per_field_step",
