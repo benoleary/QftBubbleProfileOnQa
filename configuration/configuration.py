@@ -48,7 +48,7 @@ class DiscreteConfiguration:
                 self.minimum_potential = potential_value
             if potential_value > self.maximum_potential:
                 self.maximum_potential = potential_value
-        self.maximum_weight_difference = (
+        self.maximum_potential_weight_difference = (
             self.maximum_potential - self.minimum_potential
         )
 
