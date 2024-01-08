@@ -51,14 +51,16 @@ def main():
     )
     bubble_profile = BubbleProfile(input_configuration)
 
-    if input_configuration.sampler_name == "dwave":
-        message_for_Leap = (
-            f"QftBubbleProfileOnQa for input file {parsed_arguments.input_file}"
-        )
-        message_end = f" online via Leap ({input_configuration.sampler_name})"
-    else:
-        message_for_Leap = None
-        message_end = f" locally ({input_configuration.sampler_name})"
+    message_for_Leap = (
+        f"QftBubbleProfileOnQa for input file {parsed_arguments.input_file}"
+    ) if input_configuration.sampler_name == "dwave" else None
+
+    message_end = (
+        f" online via Leap ({input_configuration.sampler_name})"
+        if input_configuration.sampler_name in ("dwave", "kerberos")
+        else f" locally ({input_configuration.sampler_name})"
+    )
+
     print(
         f"About to run with configuration from {parsed_arguments.input_file}"
         + message_end
