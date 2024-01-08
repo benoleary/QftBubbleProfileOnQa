@@ -22,6 +22,7 @@ class ProfileAtPoint:
             self,
             *,
             spatial_point_identifier: str,
+            spatial_radius_in_inverse_GeV: float,
             first_field_name: str,
             first_field_step_in_GeV: float,
             first_field_offset_in_GeV: float,
@@ -32,6 +33,7 @@ class ProfileAtPoint:
             number_of_values_for_second_field: int
         ):
         self.spatial_point_identifier = spatial_point_identifier
+        self.spatial_radius_in_inverse_GeV = spatial_radius_in_inverse_GeV
         self.first_field = FieldAtPoint(
                 field_name=first_field_name,
                 spatial_point_identifier=spatial_point_identifier,
@@ -63,9 +65,6 @@ class BubbleProfile:
         The constructor just sets up fields.
         """
         self.configuration = configuration
-        self.maximum_variable_weight = self._get_maximum_variable_weight()
-        self.domain_wall_alignment_weight = 2.0 * self.maximum_variable_weight
-        self.single_spin_fixing_weight = 2.0 * self.domain_wall_alignment_weight
         spatial_name_function = minimization.variable.name_for_index(
             "r",
             configuration.number_of_spatial_steps
@@ -74,6 +73,9 @@ class BubbleProfile:
         def create_profile_at_point(spatial_index: int) -> ProfileAtPoint:
             return ProfileAtPoint(
                 spatial_point_identifier=spatial_name_function(spatial_index),
+                spatial_radius_in_inverse_GeV=(
+                    spatial_index * configuration.spatial_step_in_inverse_GeV
+                ),
                 first_field_name=configuration.first_field_name,
                 first_field_step_in_GeV=configuration.first_field_step_in_GeV,
                 first_field_offset_in_GeV=(
@@ -99,6 +101,9 @@ class BubbleProfile:
             create_profile_at_point(spatial_index=i)
             for i in range(self.number_of_point_profiles)
         ]
+        self.maximum_variable_weight = self._get_maximum_variable_weight()
+        self.domain_wall_alignment_weight = 2.0 * self.maximum_variable_weight
+        self.single_spin_fixing_weight = 2.0 * self.domain_wall_alignment_weight
         self.spin_biases = self._set_up_weights()
 
     def map_radius_labels_to_field_strengths_from_lowest_sample(
@@ -168,23 +173,30 @@ class BubbleProfile:
         return calculated_biases
 
     def _get_maximum_variable_weight(self) -> float:
-        first_contribution = self._get_maximum_kinetic_for_single_field(
+        first_field_kinetic = self._get_maximum_kinetic_for_single_field(
             self.configuration.first_field_step_in_GeV,
             self.configuration.number_of_values_for_first_field
         )
-        if not self.configuration.second_field_name:
-            return (
-                first_contribution
-                + self.configuration.maximum_weight_difference
+        maximum_kinetic = (
+            first_field_kinetic if not self.configuration.second_field_name
+            else (
+                first_field_kinetic
+                + self._get_maximum_kinetic_for_single_field(
+                    self.configuration.second_field_step_in_GeV,
+                    self.configuration.number_of_values_for_second_field
+                )
             )
-        return (
-            first_contribution
-            + self._get_maximum_kinetic_for_single_field(
-                self.configuration.second_field_step_in_GeV,
-                self.configuration.number_of_values_for_second_field
-            )
-            + self.configuration.maximum_weight_difference
         )
+        # The largest volume factor in our calculation is from the derivative
+        # between the edge and its neighbor, so the volume factor at the edge is
+        # an upper bound on the volume factor and that is sufficient.
+        maximum_volume_factor = self._get_volume_factor(
+            self.fields_at_points[-1].spatial_radius_in_inverse_GeV
+        )
+        return (
+            maximum_kinetic
+            + self.configuration.maximum_potential_weight_difference
+        ) * maximum_volume_factor
 
     def _get_maximum_kinetic_for_single_field(
             self,
@@ -246,11 +258,15 @@ class BubbleProfile:
         # The fields at the bubble center and edge are fixed so it is not worth
         # evaluating the potential there.
         for profile_at_point in self.fields_at_points[1:-1]:
+            without_volume_factor = hamiltonian.potential.weights_for(
+                potential_in_quartic_GeV_per_field_step=potential_values,
+                single_field=profile_at_point.first_field
+            )
+            volume_factor = self._get_volume_factor(
+                profile_at_point.spatial_radius_in_inverse_GeV
+            )
             calculated_biases.add(
-                hamiltonian.potential.weights_for(
-                    potential_in_quartic_GeV_per_field_step=potential_values,
-                    single_field=profile_at_point.first_field
-                )
+                without_volume_factor.create_scaled_copy(volume_factor)
             )
         return calculated_biases
 
@@ -261,12 +277,21 @@ class BubbleProfile:
         calculated_biases = BiasAccumulator()
         previous_profile = self.fields_at_points[0]
         for profile_at_point in self.fields_at_points[1:]:
+            # There are many ways to discretize a term which depends on the
+            # radius and a derivative with respect to the radius. We take the
+            # derivative at the half-way points of each interval, and use the
+            # radius value for that half-way point.
+            average_radius = 0.5 * (
+                profile_at_point.spatial_radius_in_inverse_GeV
+                + previous_profile.spatial_radius_in_inverse_GeV
+            )
+            volume_factor = self._get_volume_factor(average_radius)
             calculated_biases.add(
                 hamiltonian.kinetic.weights_for_difference(
                     at_smaller_radius=previous_profile.first_field,
                     at_larger_radius=profile_at_point.first_field,
                     radius_difference_in_inverse_GeV=spatial_step
-                )
+                ).create_scaled_copy(volume_factor)
             )
             if profile_at_point.second_field:
                 calculated_biases.add(
@@ -274,7 +299,10 @@ class BubbleProfile:
                         at_smaller_radius=previous_profile.second_field,
                         at_larger_radius=profile_at_point.second_field,
                         radius_difference_in_inverse_GeV=spatial_step
-                    )
+                    ).create_scaled_copy(volume_factor)
                 )
             previous_profile = profile_at_point
         return calculated_biases
+
+    def _get_volume_factor(self, radius_value: float) -> float:
+        return radius_value**(self.configuration.volume_exponent)

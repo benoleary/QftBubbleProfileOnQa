@@ -108,9 +108,14 @@ def main():
                 f"running {input_configuration.command_for_gnuplot} "
                 f"on {plotting_filename}"
             )
+            title_text = "Single field approximation, " + (
+                f"thin-wall approximation"
+                if input_configuration.volume_exponent == 0
+                else f"volume exponent {input_configuration.volume_exponent}"
+            )
             with open(plotting_filename, "w") as output_file:
                 output_file.write(
-                    "set title \"Single field thin-wall approximation\"\n"
+                    f"set title \"{title_text}\"\n"
                     "set datafile separator \";\"\n"
                     "set key autotitle columnhead\n"
                     "unset key\n"
