@@ -105,7 +105,7 @@ def _for_ACS(
         phi_squared_minus_one = (phi * phi) - 1.0
         return (
             (0.125 * phi_squared_minus_one * phi_squared_minus_one)
-            + (0.000 * (phi - 1.0))
+            + (0.01 * (phi - 1.0))
         )
 
     return (
