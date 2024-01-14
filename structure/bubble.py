@@ -4,7 +4,7 @@ import minimization.sampling
 import minimization.variable
 from minimization.weight import BiasAccumulator
 from configuration.configuration import DiscreteConfiguration
-from hamiltonian.field import FieldAtPoint
+from hamiltonian.field import FieldAtPoint, FieldDefinition
 import minimization.sampling
 import hamiltonian.kinetic
 import hamiltonian.potential
@@ -23,31 +23,19 @@ class ProfileAtPoint:
             *,
             spatial_point_identifier: str,
             spatial_radius_in_inverse_GeV: float,
-            first_field_name: str,
-            first_field_step_in_GeV: float,
-            first_field_offset_in_GeV: float,
-            number_of_values_for_first_field: int,
-            second_field_name: Optional[str] = None,
-            second_field_step_in_GeV: Optional[float] = None,
-            second_field_offset_in_GeV: Optional[float] = None,
-            number_of_values_for_second_field: int
+            first_field: FieldDefinition,
+            second_field: Optional[FieldDefinition] = None
         ):
         self.spatial_point_identifier = spatial_point_identifier
         self.spatial_radius_in_inverse_GeV = spatial_radius_in_inverse_GeV
         self.first_field = FieldAtPoint(
-                field_name=first_field_name,
-                spatial_point_identifier=spatial_point_identifier,
-                number_of_values_for_field=number_of_values_for_first_field,
-                field_step_in_GeV=first_field_step_in_GeV,
-                offset_from_origin_in_GeV=first_field_offset_in_GeV
-            )
-        self.second_field = None if not second_field_name else FieldAtPoint(
-                field_name=second_field_name,
-                spatial_point_identifier=spatial_point_identifier,
-                number_of_values_for_field=number_of_values_for_second_field,
-                field_step_in_GeV=second_field_step_in_GeV,
-                offset_from_origin_in_GeV=second_field_offset_in_GeV
-            )
+            field_definition=first_field,
+            spatial_point_identifier=spatial_point_identifier
+        )
+        self.second_field = None if not second_field else FieldAtPoint(
+            field_definition=second_field,
+            spatial_point_identifier=spatial_point_identifier
+        )
 
     def get_fields(self) -> List[FieldAtPoint]:
         if not self.second_field:
@@ -69,31 +57,15 @@ class BubbleProfile:
             "r",
             configuration.number_of_spatial_steps
         )
-
         def create_profile_at_point(spatial_index: int) -> ProfileAtPoint:
             return ProfileAtPoint(
                 spatial_point_identifier=spatial_name_function(spatial_index),
                 spatial_radius_in_inverse_GeV=(
                     spatial_index * configuration.spatial_step_in_inverse_GeV
                 ),
-                first_field_name=configuration.first_field_name,
-                first_field_step_in_GeV=configuration.first_field_step_in_GeV,
-                first_field_offset_in_GeV=(
-                    configuration.first_field_offset_in_GeV
-                ),
-                number_of_values_for_first_field=(
-                    configuration.number_of_values_for_first_field
-                ),
-                second_field_name=configuration.second_field_name,
-                second_field_step_in_GeV=configuration.second_field_step_in_GeV,
-                second_field_offset_in_GeV=(
-                    configuration.second_field_offset_in_GeV
-                ),
-                number_of_values_for_second_field=(
-                    configuration.number_of_values_for_second_field
-                )
+                first_field=configuration.first_field,
+                second_field=configuration.second_field
             )
-
         self.number_of_point_profiles = (
             configuration.number_of_spatial_steps + 1
         )
@@ -115,7 +87,7 @@ class BubbleProfile:
         )
         return {
             p.spatial_point_identifier: {
-                f.field_name: f.in_GeV(lowest_energy_sample)
+                f.field_definition.field_name: f.in_GeV(lowest_energy_sample)
                 for f in p.get_fields()
             }
             for p in self.fields_at_points
@@ -131,7 +103,7 @@ class BubbleProfile:
         return (
             [
                 f"r in 1/GeV {_separation_character}"
-                f" {self.configuration.first_field_name} in GeV"
+                f" {self.configuration.first_field.field_name} in GeV"
             ]
             + [
                 self._row_for_CSV(row_index=r, sample_set=lowest_energy_sample)
@@ -174,15 +146,15 @@ class BubbleProfile:
 
     def _get_maximum_variable_weight(self) -> float:
         first_field_kinetic = self._get_maximum_kinetic_for_single_field(
-            self.configuration.first_field_step_in_GeV,
+            self.configuration.first_field.step_in_GeV,
             self.configuration.number_of_values_for_first_field
         )
         maximum_kinetic = (
-            first_field_kinetic if not self.configuration.second_field_name
+            first_field_kinetic if not self.configuration.second_field
             else (
                 first_field_kinetic
                 + self._get_maximum_kinetic_for_single_field(
-                    self.configuration.second_field_step_in_GeV,
+                    self.configuration.second_field.step_in_GeV,
                     self.configuration.number_of_values_for_second_field
                 )
             )
@@ -218,7 +190,6 @@ class BubbleProfile:
 
     def _get_model_weights(self) -> BiasAccumulator:
         calculated_biases = self._get_fixed_center_and_edge_weights()
-
         for profile_at_point in self.fields_at_points[1:-1]:
             calculated_biases.add(
                 profile_at_point.first_field.weights_for_domain_wall(
@@ -226,28 +197,35 @@ class BubbleProfile:
                     spin_alignment_weight=self.domain_wall_alignment_weight
                 )
             )
-
         return calculated_biases
 
     def _get_fixed_center_and_edge_weights(self) -> BiasAccumulator:
         """
         This only works in the assumption of a single field which is set to
-        1000... at the center and ...1110 at the edge, which is why the second
-        field is ignored.
+        1000... (or as many 1s as implied by the true vacuum in steps according
+        to the field definition object) at the center and ...1110 (or as many 0s
+        as implied by the false vacuum in steps according to the field
+        definition object) at the edge, which is why the second field is
+        ignored.
         """
+        center_first_field = self.fields_at_points[0].first_field
+        first_field_definition = center_first_field.field_definition
         calculated_biases = (
-            self.fields_at_points[0].first_field.weights_for_fixed_value(
+            center_first_field.weights_for_fixed_value(
                 fixing_weight=self.single_spin_fixing_weight,
-                number_of_down_spins=1
+                number_of_down_spins=(
+                    1 + first_field_definition.true_vacuum_value_in_steps
+                )
             )
         )
         calculated_biases.add(
             self.fields_at_points[-1].first_field.weights_for_fixed_value(
                 fixing_weight=self.single_spin_fixing_weight,
-                number_of_down_spins=-1
+                number_of_down_spins=(
+                    1 + first_field_definition.false_vacuum_value_in_steps
+                )
             )
         )
-
         return calculated_biases
 
     def _get_potential_weights(

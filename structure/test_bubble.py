@@ -1,17 +1,22 @@
 import pytest
-from configuration.configuration import DiscreteConfiguration
+from configuration.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
 
 
 class TestBubbleProfile():
     def test_spatial_identifiers_have_same_length(self):
         test_configuration = DiscreteConfiguration(
-            first_field_name="f",
             number_of_spatial_steps=100,
             spatial_step_in_inverse_GeV=1.0,
             volume_exponent=0,
-            first_field_step_in_GeV=1.0,
-            first_field_offset_in_GeV=0.0,
+            first_field=FieldDefinition(
+                field_name="f",
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=2.0,
+                number_of_values=3,
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=2.0
+            ),
             potential_in_quartic_GeV_per_field_step=[0.0, 1.0, 2.0]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
@@ -33,13 +38,18 @@ class TestBubbleProfile():
 
     def test_weights_for_thin_wall_monotonic_potential(self):
         test_configuration = DiscreteConfiguration(
-            first_field_name="f",
             number_of_spatial_steps=4,
             spatial_step_in_inverse_GeV=1.0,
             volume_exponent=0,
-            first_field_step_in_GeV=1.0,
-            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3],
-            first_field_offset_in_GeV=0.0
+            first_field=FieldDefinition(
+                field_name="f",
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=2.0,
+                number_of_values=3,
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=2.0
+            ),
+            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spin_biases = test_bubble_profile.spin_biases
@@ -199,13 +209,18 @@ class TestBubbleProfile():
 
     def test_weights_for_zero_temperature_volume_monotonic_potential(self):
         test_configuration = DiscreteConfiguration(
-            first_field_name="f",
             number_of_spatial_steps=3,
             spatial_step_in_inverse_GeV=1.25,
             volume_exponent=3,
-            first_field_step_in_GeV=1.0,
-            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3],
-            first_field_offset_in_GeV=0.0
+            first_field=FieldDefinition(
+                field_name="f",
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=2.0,
+                number_of_values=3,
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=2.0
+            ),
+            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spin_biases = test_bubble_profile.spin_biases

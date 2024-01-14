@@ -23,8 +23,8 @@ def weights_for_difference(
     absolute_weight = (
         (
             0.125
-            * at_smaller_radius.field_step_in_GeV
-            * at_larger_radius.field_step_in_GeV
+            * at_smaller_radius.field_definition.step_in_GeV
+            * at_larger_radius.field_definition.step_in_GeV
         )
         / (radius_difference_in_inverse_GeV * radius_difference_in_inverse_GeV)
     )

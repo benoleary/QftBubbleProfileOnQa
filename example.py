@@ -16,8 +16,7 @@ def create_input():
         M=50
     )
     (
-        first_field_offset_in_GeV,
-        first_field_step_in_GeV,
+        first_field_bound_in_GeV,
         spatial_step_in_inverse_GeV,
         field_to_GeV,
         potential_in_quartic_GeV_from_field_in_GeV,
@@ -34,26 +33,48 @@ def create_input():
     _add(root_element, "sampler_name", "kerberos")
     _add(root_element, "output_CSV_filename", "example.csv")
     _add(root_element, "command_for_gnuplot", "/usr/bin/gnuplot")
-    _add(root_element, "first_field_name", "f")
+    _add(root_element, "number_of_shots", "1000")
+
     _add(root_element, "number_of_spatial_steps", str(number_of_spatial_steps))
-    _add(
-        root_element,
-        "first_field_offset_in_GeV",
-        str(first_field_offset_in_GeV)
-    )
-    _add(root_element, "first_field_step_in_GeV", str(first_field_step_in_GeV))
     _add(
         root_element,
         "spatial_step_in_inverse_GeV",
         str(spatial_step_in_inverse_GeV)
     )
     _add(root_element, "volume_exponent", "0")
+
+    first_field_element = xml.etree.ElementTree.SubElement(
+        root_element,
+        "first_field"
+    )
+    _add(first_field_element, "field_name", "f")
+    _add(
+        first_field_element,
+        "lower_bound_in_GeV",
+        str(-first_field_bound_in_GeV)
+    )
+    _add(
+        first_field_element,
+        "upper_bound_in_GeV",
+        str(first_field_bound_in_GeV)
+    )
+    _add(
+        first_field_element,
+        "true_vacuum_value_in_GeV",
+        str(-first_field_bound_in_GeV)
+    )
+    _add(
+        first_field_element,
+        "false_vacuum_value_in_GeV",
+        str(first_field_bound_in_GeV)
+    )
+
     _add(
         root_element,
         "potential_in_quartic_GeV_per_field_step",
         ";".join(str(v) for v in potential_in_quartic_GeV_per_field_step)
     )
-    _add(root_element, "number_of_shots", "1000")
+
     xml.etree.ElementTree.ElementTree(root_element).write(
         "created_example.xml",
         encoding="utf8"

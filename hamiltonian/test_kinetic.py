@@ -2,12 +2,12 @@ from typing import Tuple
 import pytest
 import minimization.sampling
 import minimization.variable
-from hamiltonian.field import FieldAtPoint
+from hamiltonian.field import FieldAtPoint, FieldDefinition
 import hamiltonian.kinetic
 
 
 _field_step_in_GeV = 7.0
-_offset_from_origin_in_GeV = -10.75
+_true_vacuum_value_in_GeV=-10.75
 _radius_step_in_inverse_GeV = 0.25
 # The weight should be (1/8) * 7^2 * 4^2 = (49 * 2) = 98
 _absolute_expected_weight = 98.0
@@ -264,19 +264,33 @@ class TestKinetic():
             number_of_values_for_field
         ) -> Tuple[FieldAtPoint, FieldAtPoint]:
         field_name = "T"
+        # For example, if number_of_values_for_field = 3, then we want the field
+        # to be
+        # |1000> => _true_vacuum_value_in_GeV,
+        # |1100> => _true_vacuum_value_in_GeV + _field_step_in_GeV, and
+        # |1110> => _true_vacuum_value_in_GeV + (2 * _field_step_in_GeV),
+        # so the upper bound and also false vacuum is at
+        # (_true_vacuum_value_in_GeV
+        # + ((number_of_values_for_field - 1) * _field_step_in_GeV)).
+        upper_bound = (
+            _true_vacuum_value_in_GeV
+            + ((number_of_values_for_field - 1) * _field_step_in_GeV)
+        )
+        single_field_definition = FieldDefinition(
+            field_name=field_name,
+            number_of_values=number_of_values_for_field,
+            lower_bound_in_GeV=_true_vacuum_value_in_GeV,
+            upper_bound_in_GeV=upper_bound,
+            true_vacuum_value_in_GeV=_true_vacuum_value_in_GeV,
+            false_vacuum_value_in_GeV=upper_bound
+        )
         return (
             FieldAtPoint(
-                field_name=field_name,
-                spatial_point_identifier="l",
-                number_of_values_for_field=number_of_values_for_field,
-                field_step_in_GeV=_field_step_in_GeV,
-                offset_from_origin_in_GeV=_offset_from_origin_in_GeV
+                field_definition=single_field_definition,
+                spatial_point_identifier="l"
             ),
             FieldAtPoint(
-                field_name=field_name,
-                spatial_point_identifier="u",
-                number_of_values_for_field=number_of_values_for_field,
-                field_step_in_GeV=_field_step_in_GeV,
-                offset_from_origin_in_GeV=_offset_from_origin_in_GeV
+                field_definition=single_field_definition,
+                spatial_point_identifier="u"
             )
         )

@@ -3,8 +3,44 @@ import argparse
 import xml.etree.ElementTree
 import minimization.sampling
 import minimization.variable
-from configuration.configuration import DiscreteConfiguration
+from configuration.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
+
+
+def xml_str(
+        *,
+        parent_element: xml.etree.ElementTree,
+        element_name: str
+    ) -> Optional[str]:
+        xml_element = parent_element.find(element_name)
+        # The elements are not truthy in an intuitive way! We have to check
+        # against None.
+        if xml_element is None:
+            return None
+        return xml_element.text
+
+def xml_int(
+        *,
+        parent_element: xml.etree.ElementTree,
+        element_name: str
+    ) -> Optional[int]:
+    element_text = xml_str(
+        parent_element=parent_element,
+        element_name=element_name
+    )
+    return int(element_text) if element_text else None
+
+def xml_float(
+        *,
+        parent_element: xml.etree.ElementTree,
+        element_name: str
+    ) -> Optional[float]:
+    element_text = xml_str(
+        parent_element=parent_element,
+        element_name=element_name
+    )
+    return float(element_text) if element_text else None
+
 
 def main():
     argument_parser = argparse.ArgumentParser()
@@ -15,40 +51,80 @@ def main():
         xml.etree.ElementTree.parse(parsed_arguments.input_file).getroot()
     )
 
-    def xml_str(element_name: str) -> Optional[str]:
-        xml_element = input_xml_root.find(element_name)
-        # The elements are not truthy in an intuitive way! We have to check
-        # against None.
-        if xml_element is None:
-            return None
-        return xml_element.text
-    def xml_int(element_name: str) -> Optional[int]:
-        element_text = xml_str(element_name)
-        return int(element_text) if element_text else None
-    def xml_float(element_name: str) -> Optional[float]:
-        element_text = xml_str(element_name)
-        return float(element_text) if element_text else None
+    def root_xml_str(element_name: str) -> Optional[str]:
+        return xml_str(
+            parent_element=input_xml_root,
+            element_name=element_name
+        )
+    def root_xml_int(element_name: str) -> Optional[int]:
+        return xml_int(
+            parent_element=input_xml_root,
+            element_name=element_name
+        )
+    def root_xml_float(element_name: str) -> Optional[float]:
+        return xml_float(
+            parent_element=input_xml_root,
+            element_name=element_name
+        )
 
     potential_element = input_xml_root.find(
         "potential_in_quartic_GeV_per_field_step"
     )
     if potential_element is None:
         raise ValueError("No XML element for potential")
+    potential_per_field_step=[
+        float(v) for v in potential_element.text.split(";")
+    ]
+
+    def root_xml_field_definition(element_name: str) -> Optional[float]:
+        field_element = input_xml_root.find(element_name)
+        # The elements are not truthy in an intuitive way! We have to check
+        # against None.
+        if field_element is None:
+            return None
+        return FieldDefinition(
+                field_name=xml_str(
+                    parent_element=field_element,
+                    element_name="field_name"
+                ),
+                number_of_values=len(potential_per_field_step),
+                lower_bound_in_GeV=xml_float(
+                    parent_element=field_element,
+                    element_name="lower_bound_in_GeV"
+                ),
+                upper_bound_in_GeV=xml_float(
+                    parent_element=field_element,
+                    element_name="upper_bound_in_GeV"
+                ),
+                true_vacuum_value_in_GeV=xml_float(
+                    parent_element=field_element,
+                    element_name="true_vacuum_value_in_GeV"
+                ),
+                false_vacuum_value_in_GeV=xml_float(
+                    parent_element=field_element,
+                    element_name="false_vacuum_value_in_GeV"
+                )
+            )
+
+    first_field = root_xml_field_definition("first_field")
+    if first_field is None:
+        raise ValueError("No XML element for first field")
+
+    second_field = root_xml_field_definition("second_field")
 
     input_configuration = DiscreteConfiguration(
-        first_field_name=xml_str("first_field_name"),
-        number_of_spatial_steps=xml_int("number_of_spatial_steps"),
-        spatial_step_in_inverse_GeV=xml_float("spatial_step_in_inverse_GeV"),
-        volume_exponent=xml_int("volume_exponent"),
-        first_field_step_in_GeV=xml_float("first_field_step_in_GeV"),
-        first_field_offset_in_GeV=xml_float("first_field_offset_in_GeV"),
-        potential_in_quartic_GeV_per_field_step=[
-            float(v) for v in potential_element.text.split(";")
-        ],
-        sampler_name=xml_str("sampler_name"),
-        number_of_shots=xml_int("number_of_shots"),
-        output_CSV_filename=xml_str("output_CSV_filename"),
-        command_for_gnuplot=xml_str("command_for_gnuplot")
+        number_of_spatial_steps=root_xml_int("number_of_spatial_steps"),
+        spatial_step_in_inverse_GeV=root_xml_float(
+            "spatial_step_in_inverse_GeV"
+        ),
+        volume_exponent=root_xml_int("volume_exponent"),
+        first_field=first_field,
+        second_field=second_field,
+        potential_in_quartic_GeV_per_field_step=potential_per_field_step,
+        sampler_name=root_xml_str("sampler_name"),
+        number_of_shots=root_xml_int("number_of_shots"),
+        output_CSV_filename=root_xml_str("output_CSV_filename"),
+        command_for_gnuplot=root_xml_str("command_for_gnuplot")
     )
     bubble_profile = BubbleProfile(input_configuration)
 

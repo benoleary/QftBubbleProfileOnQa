@@ -3,7 +3,7 @@ import pytest
 import minimization.sampling
 import minimization.variable
 from minimization.weight import BiasAccumulator
-from configuration.configuration import DiscreteConfiguration
+from configuration.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
 from hamiltonian.field import FieldAtPoint
 import hamiltonian.potential
@@ -112,12 +112,17 @@ class TestSingleFieldPotential():
             single_field_potential(f) for f in range(number_of_potential_values)
         ]
         test_configuration = DiscreteConfiguration(
-            first_field_name="T",
+            first_field=FieldDefinition(
+                field_name="T",
+                number_of_values=number_of_potential_values,
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=float(number_of_potential_values),
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=float(number_of_potential_values)
+            ),
             number_of_spatial_steps=1,
             spatial_step_in_inverse_GeV=1.0,
             volume_exponent=0,
-            first_field_step_in_GeV=1.0,
-            first_field_offset_in_GeV=0.0,
             potential_in_quartic_GeV_per_field_step=discretized_potential
         )
 
