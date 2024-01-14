@@ -1,16 +1,14 @@
 from typing import List, Optional
+from hamiltonian.field import FieldDefinition
+
 
 
 class DiscreteConfiguration:
     def __init__(
             self,
             *,
-            first_field_name: str,
-            first_field_step_in_GeV: float,
-            first_field_offset_in_GeV: float,
-            second_field_name: Optional[str] = None,
-            second_field_step_in_GeV: Optional[float] = None,
-            second_field_offset_in_GeV: Optional[float] = None,
+            first_field: FieldDefinition,
+            second_field: Optional[FieldDefinition] = None,
             number_of_spatial_steps: int,
             spatial_step_in_inverse_GeV: float,
             volume_exponent: int,
@@ -22,12 +20,8 @@ class DiscreteConfiguration:
         ):
         if not potential_in_quartic_GeV_per_field_step:
             raise ValueError("Cannot have a potential without any values")
-        self.first_field_name = first_field_name
-        self.first_field_step_in_GeV = first_field_step_in_GeV
-        self.first_field_offset_in_GeV = first_field_offset_in_GeV
-        self.second_field_name = second_field_name
-        self.second_field_step_in_GeV = second_field_step_in_GeV
-        self.second_field_offset_in_GeV = second_field_offset_in_GeV
+        self.first_field = first_field
+        self.second_field = second_field
         self.number_of_spatial_steps = number_of_spatial_steps
         self.spatial_step_in_inverse_GeV = spatial_step_in_inverse_GeV
         self.volume_exponent = volume_exponent

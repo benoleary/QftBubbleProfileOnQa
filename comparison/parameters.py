@@ -8,9 +8,9 @@ def for_SM_Higgs(
     ) -> Tuple[
         float,
         float,
-        float,
         Callable[[int], float],
         Callable[[float], float],
+        int,
         int
     ]:
     VEV_in_GeV = 246.0
@@ -32,8 +32,7 @@ def for_SM_Higgs(
         )
 
     return (
-        -VEV_in_GeV,
-        (step_factor * VEV_in_GeV),
+        VEV_in_GeV,
         # This is almost certainly completely wrong.
         (0.5 / VEV_in_GeV),
         field_to_GeV,
@@ -47,7 +46,14 @@ def for_ACS(
         *,
         N: int,
         M: int
-    ) -> Tuple[float, float, float, Callable[[int], float]]:
+    ) -> Tuple[
+        float,
+        float,
+        Callable[[int], float],
+        Callable[[float], float],
+        int,
+        int
+    ]:
     # V = (lambda/8) (phi^2 - a^2)^2 + (epsilon/2a)(phi - a)
     # a = lambda = 1, epsilon = 0.01
     # V = (1/8) (phi^2 - 1)^2 + (0.005)(phi - 1)
@@ -64,9 +70,7 @@ def for_ACS(
         )
 
     return (
-        -1.0,
-        # The values of phi have to go from -1 to +1.
-        (2.0 / N),
+        1.0,
         # A guess, because they plot rho from 0 to 25 for M = 50.
         0.5,
         field_to_GeV,

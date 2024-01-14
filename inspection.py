@@ -1,19 +1,23 @@
 import dwave.inspector
 import minimization.sampling
 import minimization.variable
-from configuration.configuration import DiscreteConfiguration
+from configuration.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
-from hamiltonian.field import FieldAtPoint
+from hamiltonian.field import FieldAtPoint, FieldDefinition
 import hamiltonian.potential
 
 
 def inspect_single_chain_for_single_field(sampler_name: str):
     test_field = FieldAtPoint(
-        field_name="t",
-        spatial_point_identifier="x0",
-        number_of_values_for_field=7,
-        field_step_in_GeV=1.0,
-        offset_from_origin_in_GeV=0.0
+        field_definition=FieldDefinition(
+            field_name="t",
+            number_of_values=7,
+            lower_bound_in_GeV=0.0,
+            upper_bound_in_GeV=6.0,
+            true_vacuum_value_in_GeV=0.0,
+            false_vacuum_value_in_GeV=6.0
+        ),
+        spatial_point_identifier="x0"
     )
     end_weight = 10.0
     alignment_weight = 3.5
@@ -39,14 +43,22 @@ def inspect_single_chain_for_single_field(sampler_name: str):
 
 
 def flat_and_zigzag_from_kinetic_term(sampler_name: str):
+    number_of_field_values = 5
     test_configuration = DiscreteConfiguration(
-        first_field_name="f",
         number_of_spatial_steps=2,
         spatial_step_in_inverse_GeV=1.0,
         volume_exponent=0,
-        first_field_step_in_GeV=1.0,
-        first_field_offset_in_GeV=0.0,
-        potential_in_quartic_GeV_per_field_step=[0.0 for _ in range(5)]
+        first_field=FieldDefinition(
+            field_name="f",
+            number_of_values=number_of_field_values,
+            lower_bound_in_GeV=0.0,
+            upper_bound_in_GeV=4.0,
+            true_vacuum_value_in_GeV=0.0,
+            false_vacuum_value_in_GeV=4.0
+        ),
+        potential_in_quartic_GeV_per_field_step=[
+            0.0 for _ in range(number_of_field_values)
+        ]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
@@ -100,14 +112,22 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
 
 
 def low_resolution_single_field_with_linear_potential(sampler_name: str):
+    number_of_field_values = 5
     test_configuration = DiscreteConfiguration(
-        first_field_name="f",
         number_of_spatial_steps=4,
         spatial_step_in_inverse_GeV=1.0,
         volume_exponent=0,
-        first_field_step_in_GeV=1.0,
-        first_field_offset_in_GeV=0.0,
-        potential_in_quartic_GeV_per_field_step=[0.6 * f for f in range(5)]
+        first_field=FieldDefinition(
+            field_name="f",
+            number_of_values=number_of_field_values,
+            lower_bound_in_GeV=0.0,
+            upper_bound_in_GeV=4.0,
+            true_vacuum_value_in_GeV=0.0,
+            false_vacuum_value_in_GeV=4.0
+        ),
+        potential_in_quartic_GeV_per_field_step=[
+            0.6 * f for f in range(number_of_field_values)
+        ]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
 
