@@ -32,8 +32,11 @@ def inspect_single_chain_for_single_field(sampler_name: str):
         "lowest energies for single field chain:",
         lowest_energy
     )
-    dwave.inspector.show(sampling_result)
-    print(sampling_result)
+
+    if sampler_name == "dwave":
+        dwave.inspector.show(sampling_result)
+        print(sampling_result)
+
 
 def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     test_configuration = DiscreteConfiguration(
@@ -91,9 +94,10 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
 
-    if minimization.sampling.is_online_sampler(sampler_name):
+    if sampler_name == "dwave":
         dwave.inspector.show(penalizing_kinetic_result)
         print(penalizing_kinetic_result)
+
 
 def low_resolution_single_field_with_linear_potential(sampler_name: str):
     test_configuration = DiscreteConfiguration(
@@ -124,6 +128,6 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
 
 
 if __name__ == "__main__":
-    # inspect_single_chain_for_single_field("dwave")
-    # flat_and_zigzag_from_kinetic_term("dwave")
-    low_resolution_single_field_with_linear_potential("default")
+    inspect_single_chain_for_single_field("dwave")
+    # flat_and_zigzag_from_kinetic_term("default")
+    # low_resolution_single_field_with_linear_potential("default")
