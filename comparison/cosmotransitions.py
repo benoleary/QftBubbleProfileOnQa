@@ -20,6 +20,7 @@ data_filename = "temporary_gnuplot_input.csv"
 print(f"writing profile in {data_filename}")
 with open(data_filename, "w") as output_file:
     output_file.write("\n".join(content_for_CSV) + "\n")
+
 picture_filename = data_filename.rsplit(".", 1)[0] + ".png"
 plotting_filename = "temporary_gnuplot_input.in"
 print(

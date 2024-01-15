@@ -32,7 +32,7 @@ def weights_for_difference(
     for left in (at_smaller_radius, at_larger_radius):
         for right in (at_smaller_radius, at_larger_radius):
             signed_weight = (
-                absolute_weight if left == right else -absolute_weight
+                absolute_weight if (left == right) else -absolute_weight
             )
             for l in left.binary_variable_names[1:-1]:
                 for r in right.binary_variable_names[1:-1]:

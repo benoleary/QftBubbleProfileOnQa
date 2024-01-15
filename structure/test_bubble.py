@@ -17,7 +17,7 @@ class TestBubbleProfile():
                 true_vacuum_value_in_GeV=0.0,
                 false_vacuum_value_in_GeV=2.0
             ),
-            potential_in_quartic_GeV_per_field_step=[0.0, 1.0, 2.0]
+            potential_in_quartic_GeV_per_field_step=[[0.0, 1.0, 2.0]]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spatial_identifiers = [
@@ -49,7 +49,7 @@ class TestBubbleProfile():
                 true_vacuum_value_in_GeV=0.0,
                 false_vacuum_value_in_GeV=2.0
             ),
-            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3]
+            potential_in_quartic_GeV_per_field_step=[[-1.5, 0.9, 5.3]]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spin_biases = test_bubble_profile.spin_biases
@@ -220,7 +220,7 @@ class TestBubbleProfile():
                 true_vacuum_value_in_GeV=0.0,
                 false_vacuum_value_in_GeV=2.0
             ),
-            potential_in_quartic_GeV_per_field_step=[-1.5, 0.9, 5.3]
+            potential_in_quartic_GeV_per_field_step=[[-1.5, 0.9, 5.3]]
         )
         test_bubble_profile = BubbleProfile(test_configuration)
         actual_spin_biases = test_bubble_profile.spin_biases

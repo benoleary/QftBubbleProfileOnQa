@@ -109,7 +109,10 @@ class TestSingleFieldPotential():
             number_of_potential_values: int
         ) -> Tuple[FieldAtPoint, BiasAccumulator, BiasAccumulator]:
         discretized_potential = [
-            single_field_potential(f) for f in range(number_of_potential_values)
+            [
+                single_field_potential(f)
+                for f in range(number_of_potential_values)
+            ]
         ]
         test_configuration = DiscreteConfiguration(
             first_field=FieldDefinition(
@@ -141,7 +144,7 @@ class TestSingleFieldPotential():
             )
 
         potential_values = (
-            test_configuration.potential_in_quartic_GeV_per_field_step
+            test_configuration.potential_in_quartic_GeV_per_field_step[0]
         )
         potential_weights = hamiltonian.potential.weights_for(
             potential_in_quartic_GeV_per_field_step=potential_values,

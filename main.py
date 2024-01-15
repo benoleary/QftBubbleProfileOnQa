@@ -73,10 +73,16 @@ def main():
     if potential_element is None:
         raise ValueError("No XML element for potential")
     potential_per_field_step=[
-        float(v) for v in potential_element.text.split(";")
+        [float(v) for v in potential_row.split(";")]
+        for potential_row in potential_element.text.split("#")
     ]
+    print(f"potential_per_field_step = {potential_per_field_step}")
 
-    def root_xml_field_definition(element_name: str) -> Optional[float]:
+    def root_xml_field_definition(
+            *,
+            element_name: str,
+            number_of_values: int
+        ) -> Optional[float]:
         field_element = input_xml_root.find(element_name)
         # The elements are not truthy in an intuitive way! We have to check
         # against None.
@@ -87,7 +93,7 @@ def main():
                     parent_element=field_element,
                     element_name="field_name"
                 ),
-                number_of_values=len(potential_per_field_step),
+                number_of_values=number_of_values,
                 lower_bound_in_GeV=xml_float(
                     parent_element=field_element,
                     element_name="lower_bound_in_GeV"
@@ -106,11 +112,17 @@ def main():
                 )
             )
 
-    first_field = root_xml_field_definition("first_field")
+    first_field = root_xml_field_definition(
+        element_name="first_field",
+        number_of_values=len(potential_per_field_step[0])
+    )
     if first_field is None:
         raise ValueError("No XML element for first field")
 
-    second_field = root_xml_field_definition("second_field")
+    second_field = root_xml_field_definition(
+        element_name="second_field",
+        number_of_values=len(potential_per_field_step)
+    )
 
     input_configuration = DiscreteConfiguration(
         number_of_spatial_steps=root_xml_int("number_of_spatial_steps"),

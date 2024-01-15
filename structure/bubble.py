@@ -57,6 +57,7 @@ class BubbleProfile:
             "r",
             configuration.number_of_spatial_steps
         )
+
         def create_profile_at_point(spatial_index: int) -> ProfileAtPoint:
             return ProfileAtPoint(
                 spatial_point_identifier=spatial_name_function(spatial_index),
@@ -66,6 +67,7 @@ class BubbleProfile:
                 first_field=configuration.first_field,
                 second_field=configuration.second_field
             )
+
         self.number_of_point_profiles = (
             configuration.number_of_spatial_steps + 1
         )
@@ -230,14 +232,14 @@ class BubbleProfile:
 
     def _get_potential_weights(
             self,
-            potential_values: List[float]
+            potential_values: List[List[float]]
         ) -> BiasAccumulator:
         calculated_biases = BiasAccumulator()
         # The fields at the bubble center and edge are fixed so it is not worth
         # evaluating the potential there.
         for profile_at_point in self.fields_at_points[1:-1]:
             without_volume_factor = hamiltonian.potential.weights_for(
-                potential_in_quartic_GeV_per_field_step=potential_values,
+                potential_in_quartic_GeV_per_field_step=potential_values[0],
                 single_field=profile_at_point.first_field
             )
             volume_factor = self._get_volume_factor(
