@@ -20,8 +20,10 @@ class FieldDefinition:
             raise ValueError(
                 "Need lower bound for field to be below upper bound"
             )
+
         def in_bounds(value_in_GeV: float) -> bool:
             return (lower_bound_in_GeV <= value_in_GeV <= upper_bound_in_GeV)
+
         true_vacuum_in_bounds = in_bounds(true_vacuum_value_in_GeV)
         false_vacuum_in_bounds = in_bounds(false_vacuum_value_in_GeV)
         if not (true_vacuum_in_bounds and false_vacuum_in_bounds):
@@ -63,7 +65,7 @@ class FieldDefinition:
         )
         return (
             vacuum_value_in_steps
-            if reconstructed_difference_in_GeV <= 0.5 * self.step_in_GeV
+            if reconstructed_difference_in_GeV <= (0.5 * self.step_in_GeV)
             else (vacuum_value_in_steps + 1)
         )
 

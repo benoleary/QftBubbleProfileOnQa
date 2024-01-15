@@ -57,7 +57,7 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
             false_vacuum_value_in_GeV=4.0
         ),
         potential_in_quartic_GeV_per_field_step=[
-            0.0 for _ in range(number_of_field_values)
+            [0.0 for _ in range(number_of_field_values)]
         ]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
@@ -126,7 +126,7 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
             false_vacuum_value_in_GeV=4.0
         ),
         potential_in_quartic_GeV_per_field_step=[
-            0.6 * f for f in range(number_of_field_values)
+            [0.6 * f for f in range(number_of_field_values)]
         ]
     )
     test_bubble_profile = BubbleProfile(test_configuration)
