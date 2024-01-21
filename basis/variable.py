@@ -5,7 +5,7 @@ from dimod import SampleSet
 def name_for_index(
         name_prefix: str,
         maximum_index: int
-    ) -> Callable[[int], str]:
+) -> Callable[[int], str]:
     number_of_digits = len(f"{maximum_index}")
     def specific_function(specific_index: int) -> str:
         numeric_part = "{0:0{n}}".format(specific_index, n=number_of_digits)
@@ -21,7 +21,7 @@ def as_bitstring(
         *,
         spin_variable_names: List[str],
         spin_mapping: Dict[str, int]
-    ) -> str:
+) -> str:
     return "".join(
         [spin_to_zero_or_one(spin_mapping[n]) for n in spin_variable_names]
     )
@@ -31,7 +31,7 @@ def bitstrings_to_energies(
         *,
         binary_variable_names: List[str],
         sample_set: SampleSet
-    ) -> Dict[str, float]:
+) -> Dict[str, float]:
     return {
         as_bitstring(
                 spin_variable_names=binary_variable_names,

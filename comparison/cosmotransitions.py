@@ -1,6 +1,7 @@
 from cosmoTransitions import tunneling1D as CTT1
 import potential as P
 
+
 bubble_profile = CTT1.SingleFieldInstanton(
     -1.0,
     1.0,
