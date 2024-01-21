@@ -1,18 +1,19 @@
 from typing import Callable, Tuple
 
+
 def for_SM_Higgs(
         *,
         linear_factor: float,
         number_of_steps_from_origin_to_VEV: int,
         number_of_spatial_steps: int
-    ) -> Tuple[
-        float,
-        float,
-        Callable[[int], float],
-        Callable[[float], float],
-        int,
-        int
-    ]:
+) -> Tuple[
+    float,
+    float,
+    Callable[[int], float],
+    Callable[[float], float],
+    int,
+    int
+]:
     VEV_in_GeV = 246.0
     squared_VEV = VEV_in_GeV * VEV_in_GeV
     quartic_VEV = squared_VEV * squared_VEV
@@ -46,14 +47,14 @@ def for_ACS(
         *,
         N: int,
         M: int
-    ) -> Tuple[
-        float,
-        float,
-        Callable[[int], float],
-        Callable[[float], float],
-        int,
-        int
-    ]:
+) -> Tuple[
+    float,
+    float,
+    Callable[[int], float],
+    Callable[[float], float],
+    int,
+    int
+]:
     # V = (lambda/8) (phi^2 - a^2)^2 + (epsilon/2a)(phi - a)
     # a = lambda = 1, epsilon = 0.01
     # V = (1/8) (phi^2 - 1)^2 + (0.005)(phi - 1)

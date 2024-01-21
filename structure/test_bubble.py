@@ -1,14 +1,26 @@
 import pytest
-from configuration.configuration import DiscreteConfiguration, FieldDefinition
+
+from basis.field import FieldDefinition
+from dynamics.spin import SpinHamiltonian
+from input.configuration import (
+    QftModelConfiguration, SpatialLatticeConfiguration
+)
 from structure.bubble import BubbleProfile
+from structure.spin import SpinDomainWallWeighter
 
 
-class TestBubbleProfile():
+class TestBubbleProfileWithSpinVariables():
+    """
+    This tests some functionalities of the BubbleProfile class when instantiated
+    with objects appropriate to spin variables rather than bit variables,
+    because in one case, it does not matter, while in the other case, the
+    expected weights have been calculated only for the spin variable case. The
+    test could be repeated for bit variables but the point is to check the
+    scaling of weights with radius, and working out the expected weights again
+    is a lot of effort for very little gain.
+    """
     def test_spatial_identifiers_have_same_length(self):
-        test_configuration = DiscreteConfiguration(
-            number_of_spatial_steps=100,
-            spatial_step_in_inverse_GeV=1.0,
-            volume_exponent=0,
+        QFT_model_configuration = QftModelConfiguration(
             first_field=FieldDefinition(
                 field_name="f",
                 lower_bound_in_GeV=0.0,
@@ -19,11 +31,24 @@ class TestBubbleProfile():
             ),
             potential_in_quartic_GeV_per_field_step=[[0.0, 1.0, 2.0]]
         )
-        test_bubble_profile = BubbleProfile(test_configuration)
+        spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+        domain_wall_weighter = SpinDomainWallWeighter()
+        spatial_lattice_configuration = SpatialLatticeConfiguration(
+            number_of_spatial_steps=100,
+            spatial_step_in_inverse_GeV=1.0,
+            volume_exponent=0
+        )
+
+        test_bubble_profile = BubbleProfile(
+            annealer_Hamiltonian=spin_Hamiltonian,
+            domain_wall_weighter=domain_wall_weighter,
+            spatial_lattice_configuration=spatial_lattice_configuration
+        )
         actual_spatial_identifiers = [
             p.spatial_point_identifier
             for p in test_bubble_profile.fields_at_points
         ]
+
         # There are 101 values if there are 100 steps.
         expected_spatial_identifiers = [
             "r{0:03}".format(i) for i in range(101)
@@ -37,10 +62,7 @@ class TestBubbleProfile():
         ), "incorrect length(s) for spatial identifiers"
 
     def test_weights_for_thin_wall_monotonic_potential(self):
-        test_configuration = DiscreteConfiguration(
-            number_of_spatial_steps=4,
-            spatial_step_in_inverse_GeV=1.0,
-            volume_exponent=0,
+        QFT_model_configuration = QftModelConfiguration(
             first_field=FieldDefinition(
                 field_name="f",
                 lower_bound_in_GeV=0.0,
@@ -51,8 +73,20 @@ class TestBubbleProfile():
             ),
             potential_in_quartic_GeV_per_field_step=[[-1.5, 0.9, 5.3]]
         )
-        test_bubble_profile = BubbleProfile(test_configuration)
-        actual_spin_biases = test_bubble_profile.spin_biases
+        spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+        domain_wall_weighter = SpinDomainWallWeighter()
+        spatial_lattice_configuration = SpatialLatticeConfiguration(
+            number_of_spatial_steps=4,
+            spatial_step_in_inverse_GeV=1.0,
+            volume_exponent=0
+        )
+
+        test_bubble_profile = BubbleProfile(
+            annealer_Hamiltonian=spin_Hamiltonian,
+            domain_wall_weighter=domain_wall_weighter,
+            spatial_lattice_configuration=spatial_lattice_configuration
+        )
+        actual_weights = test_bubble_profile.annealing_weights
 
         # There are five points, each with three values for the field (so
         # bitstrings 1000, 1100, and 1110). The maximum potential difference is
@@ -69,7 +103,7 @@ class TestBubbleProfile():
 
         lower_index_expected_potential_difference = -1.2
         upper_index_expected_potential_difference = -2.2
-        expected_linear_biases = {
+        expected_linear_weights = {
             # The center field should have weights to keep it at 1000
             "f_r0_0": expected_spin_weight,
             "f_r0_1": -expected_spin_weight,
@@ -99,7 +133,7 @@ class TestBubbleProfile():
             "f_r4_2": expected_spin_weight,
             "f_r4_3": -expected_spin_weight
         }
-        expected_quadratic_biases = {
+        expected_quadratic_weights = {
             # There are six pairs which should have only the ICDW alignment
             # weight.
             ("f_r1_0", "f_r1_1"): expected_alignment_weight,
@@ -187,31 +221,28 @@ class TestBubbleProfile():
         }
 
         assert (
-            actual_spin_biases.linear_biases.keys()
-            == expected_linear_biases.keys()
-        ), "incorrect linear bias variable names"
-        for variable_name in actual_spin_biases.linear_biases.keys():
+            actual_weights.linear_weights.keys()
+            == expected_linear_weights.keys()
+        ), "incorrect linear weight variable names"
+        for variable_name in actual_weights.linear_weights.keys():
             assert (
-                pytest.approx(expected_linear_biases[variable_name])
-                == actual_spin_biases.linear_biases.get(variable_name, 0.0)
+                pytest.approx(expected_linear_weights[variable_name])
+                == actual_weights.linear_weights.get(variable_name, 0.0)
             ), f"incorrect linear weight for {variable_name}"
 
         assert (
-            actual_spin_biases.quadratic_biases.keys()
-            == expected_quadratic_biases.keys()
-        ), "incorrect quadratic bias variable names"
-        for variable_name in actual_spin_biases.quadratic_biases.keys():
+            actual_weights.quadratic_weights.keys()
+            == expected_quadratic_weights.keys()
+        ), "incorrect quadratic weight variable names"
+        for variable_name in actual_weights.quadratic_weights.keys():
             assert(
-                pytest.approx(expected_quadratic_biases[variable_name])
-                == actual_spin_biases.quadratic_biases.get(variable_name, 0.0)
+                pytest.approx(expected_quadratic_weights[variable_name])
+                == actual_weights.quadratic_weights.get(variable_name, 0.0)
             ), f"incorrect quadratic weight for {variable_name}"
 
 
     def test_weights_for_zero_temperature_volume_monotonic_potential(self):
-        test_configuration = DiscreteConfiguration(
-            number_of_spatial_steps=3,
-            spatial_step_in_inverse_GeV=1.25,
-            volume_exponent=3,
+        QFT_model_configuration = QftModelConfiguration(
             first_field=FieldDefinition(
                 field_name="f",
                 lower_bound_in_GeV=0.0,
@@ -222,8 +253,20 @@ class TestBubbleProfile():
             ),
             potential_in_quartic_GeV_per_field_step=[[-1.5, 0.9, 5.3]]
         )
-        test_bubble_profile = BubbleProfile(test_configuration)
-        actual_spin_biases = test_bubble_profile.spin_biases
+        spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+        domain_wall_weighter = SpinDomainWallWeighter()
+        spatial_lattice_configuration = SpatialLatticeConfiguration(
+            number_of_spatial_steps=3,
+            spatial_step_in_inverse_GeV=1.25,
+            volume_exponent=3
+        )
+
+        test_bubble_profile = BubbleProfile(
+            annealer_Hamiltonian=spin_Hamiltonian,
+            domain_wall_weighter=domain_wall_weighter,
+            spatial_lattice_configuration=spatial_lattice_configuration
+        )
+        actual_weights = test_bubble_profile.annealing_weights
 
         # There are three points, each with three values for the field (so
         # bitstrings 1000, 1100, and 1110). The maximum radius is 3.75/GeV, and
@@ -247,7 +290,7 @@ class TestBubbleProfile():
         lower_index_expected_potential_difference = -1.2
         upper_index_expected_potential_difference = -2.2
 
-        expected_linear_biases = {
+        expected_linear_weights = {
             # The center field should have weights to keep it at 1000
             "f_r0_0": expected_spin_weight,
             "f_r0_1": -expected_spin_weight,
@@ -289,7 +332,7 @@ class TestBubbleProfile():
         expected_middle_kinetic = (1.5 * 1.25)**3 * common_kinetic_factor
         expected_outer_kinetic = (2.5 * 1.25)**3 * common_kinetic_factor
 
-        expected_quadratic_biases = {
+        expected_quadratic_weights = {
             # There are four pairs which should have only the ICDW alignment
             # weight.
             ("f_r1_0", "f_r1_1"): expected_alignment_weight,
@@ -372,21 +415,21 @@ class TestBubbleProfile():
         }
 
         assert (
-            actual_spin_biases.linear_biases.keys()
-            == expected_linear_biases.keys()
-        ), "incorrect linear bias variable names"
-        for variable_name in actual_spin_biases.linear_biases.keys():
+            actual_weights.linear_weights.keys()
+            == expected_linear_weights.keys()
+        ), "incorrect linear weight variable names"
+        for variable_name in actual_weights.linear_weights.keys():
             assert (
-                pytest.approx(expected_linear_biases[variable_name])
-                == actual_spin_biases.linear_biases.get(variable_name, 0.0)
+                pytest.approx(expected_linear_weights[variable_name])
+                == actual_weights.linear_weights.get(variable_name, 0.0)
             ), f"incorrect linear weight for {variable_name}"
 
         assert (
-            actual_spin_biases.quadratic_biases.keys()
-            == expected_quadratic_biases.keys()
-        ), "incorrect quadratic bias variable names"
-        for variable_name in actual_spin_biases.quadratic_biases.keys():
+            actual_weights.quadratic_weights.keys()
+            == expected_quadratic_weights.keys()
+        ), "incorrect quadratic weight variable names"
+        for variable_name in actual_weights.quadratic_weights.keys():
             assert(
-                pytest.approx(expected_quadratic_biases[variable_name])
-                == actual_spin_biases.quadratic_biases.get(variable_name, 0.0)
+                pytest.approx(expected_quadratic_weights[variable_name])
+                == actual_weights.quadratic_weights.get(variable_name, 0.0)
             ), f"incorrect quadratic weight for {variable_name}"

@@ -1,18 +1,27 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
-    <sampler_name>kerberos</sampler_name>
-    <output_CSV_filename>ACS_zero_epsilon_N50_M50_cloud.csv</output_CSV_filename>
-    <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
-    <number_of_spatial_steps>50</number_of_spatial_steps>
-    <volume_exponent>0</volume_exponent>
-    <first_field>
-        <field_name>f</field_name>
-        <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
-        <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
-        <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
-        <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
-    </first_field>
-    <spatial_step_in_inverse_GeV>0.5</spatial_step_in_inverse_GeV>
-    <!-- This potential is symmetric around phi = 0, just for curiosity. -->
-    <potential_in_quartic_GeV_per_field_step>0.0;0.0007683200000000005;0.0029491199999999982;0.006361920000000001;0.010833920000000007;0.01619999999999999;0.022302719999999998;0.028992320000000002;0.03612672000000001;0.04357152;0.0512;0.05889311999999998;0.06653952;0.07403552000000001;0.08128512;0.08819999999999999;0.09469952000000001;0.10071072000000002;0.10616832;0.11101472;0.1152;0.11868191999999998;0.12142592;0.12340512000000001;0.12460031999999999;0.125;0.12460031999999999;0.12340512000000001;0.12142591999999998;0.11868192000000001;0.1152;0.11101472;0.10616832;0.10071071999999999;0.09469952;0.08820000000000001;0.08128512;0.07403552000000001;0.06653952;0.05889311999999998;0.05119999999999998;0.04357152000000002;0.03612672000000001;0.028992320000000002;0.022302719999999998;0.01619999999999999;0.010833919999999992;0.006361920000000008;0.002949120000000007;0.0007683200000000005;0.0</potential_in_quartic_GeV_per_field_step>
+    <annealer>
+        <sampler_name>kerberos</sampler_name>
+        <variable_type>spin</variable_type>
+    </annealer>
+    <output>
+        <output_CSV_filename>ACS_zero_epsilon_N50_M50_cloud.csv</output_CSV_filename>
+        <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
+    </output>
+    <space>
+        <number_of_spatial_steps>50</number_of_spatial_steps>
+        <spatial_step_in_inverse_GeV>0.5</spatial_step_in_inverse_GeV>
+        <volume_exponent>0</volume_exponent>
+    </space>
+    <qft>
+        <first_field>
+            <field_name>f</field_name>
+            <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
+        </first_field>
+        <!-- This potential is symmetric around phi = 0, just for curiosity. -->
+        <potential_in_quartic_GeV_per_field_step>0.0;0.0007683200000000005;0.0029491199999999982;0.006361920000000001;0.010833920000000007;0.01619999999999999;0.022302719999999998;0.028992320000000002;0.03612672000000001;0.04357152;0.0512;0.05889311999999998;0.06653952;0.07403552000000001;0.08128512;0.08819999999999999;0.09469952000000001;0.10071072000000002;0.10616832;0.11101472;0.1152;0.11868191999999998;0.12142592;0.12340512000000001;0.12460031999999999;0.125;0.12460031999999999;0.12340512000000001;0.12142591999999998;0.11868192000000001;0.1152;0.11101472;0.10616832;0.10071071999999999;0.09469952;0.08820000000000001;0.08128512;0.07403552000000001;0.06653952;0.05889311999999998;0.05119999999999998;0.04357152000000002;0.03612672000000001;0.028992320000000002;0.022302719999999998;0.01619999999999999;0.010833919999999992;0.006361920000000008;0.002949120000000007;0.0007683200000000005;0.0</potential_in_quartic_GeV_per_field_step>
+    </qft>
 </configuration>
