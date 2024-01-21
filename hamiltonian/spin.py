@@ -86,34 +86,30 @@ def _weights_for_single_field_potential_at_point(
     return spin_weights
 
 
-def _weight_for_ACS_kinetic_term(
-        *,
-        field_step_in_GeV: float,
-        radius_step_in_inverse_GeV: float
+def _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
+        field_step_in_GeV: float
 ) -> float:
     """
     This gives the weight which appears for every combination of spin variables
     between two FieldAtPoint instances as a positive contribution between those
     which both belong to the same FieldAtPoint and as a negative contribution
-    between those which belong to different FieldAtPoint instances.
+    between those which belong to different FieldAtPoint instances assuming a
+    spatial step size of 1/GeV. Scaling for other spatial step sizes is
+    straightforward.
     """
     # We assume that the field has the same step size at both spatial
     # points.
-    return (
-        (0.125 * field_step_in_GeV * field_step_in_GeV)
-        / (radius_step_in_inverse_GeV * radius_step_in_inverse_GeV)
-    )
+    return (0.125 * field_step_in_GeV * field_step_in_GeV)
 
 
 def _constant_quadratics_block(
-        *,
-        field_definition: FieldDefinition,
-        radius_step_in_inverse_GeV: float
+        field_definition: FieldDefinition
 ) -> WeightTemplate:
         number_of_values = field_definition.number_of_values
-        kinetic_constant = _weight_for_ACS_kinetic_term(
-            field_step_in_GeV=field_definition.step_in_GeV,
-            radius_step_in_inverse_GeV=radius_step_in_inverse_GeV
+        kinetic_constant = (
+            _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
+                field_definition.step_in_GeV
+            )
         )
         return  WeightTemplate(
             first_number_of_values=0,
@@ -130,7 +126,8 @@ class SpinHamiltonian(AnnealerHamiltonian):
             self,
             *,
             first_field: FieldDefinition,
-            second_field: Optional[FieldDefinition] = None
+            second_field: Optional[FieldDefinition] = None,
+            potential_in_quartic_GeV_per_field_step: List[List[float]]
     ):
         self.first_field_definition = first_field
         self.second_field_definition = second_field
@@ -141,10 +138,22 @@ class SpinHamiltonian(AnnealerHamiltonian):
             None if not second_field
             else _weights_for_domain_wall(second_field.number_of_values + 1)
         )
+        self.first_field_positive_block = _constant_quadratics_block(
+            first_field
+        )
+        self.second_field_positive_block = (
+            None if not second_field
+            else _constant_quadratics_block(second_field)
+        )
+        self.potential_weight_template = (
+            _weights_for_single_field_potential_at_point(
+                potential_in_quartic_GeV_per_field_step[0]
+            ) if not second_field
+            else None # TODO: proper weights for two fields
+        )
 
     def domain_wall_weights(
             self,
-            *,
             field_at_point: FieldAtPoint
     ) -> WeightAccumulator:
         if field_at_point.field_definition == self.first_field_definition:
@@ -160,8 +169,8 @@ class SpinHamiltonian(AnnealerHamiltonian):
                 field_at_point
             ),
             quadratic_weights=weight_template.quadratics_for_variable_names(
-                field_at_point,
-                field_at_point
+                first_field=field_at_point,
+                second_field=field_at_point
             )
         )
 
@@ -173,32 +182,68 @@ class SpinHamiltonian(AnnealerHamiltonian):
             nearer_edge: FieldAtPoint,
             scaling_factor: float
     ) -> WeightAccumulator:
-        positive_block = _constant_quadratics_block(
-            field_definition=nearer_center.field_definition,
-            radius_step_in_inverse_GeV=radius_step_in_inverse_GeV
+        field_name = nearer_center.field_definition.field_name
+        positive_block = (
+            self.second_field_definition
+            if field_name == self.second_field_definition.field_name
+            else self.first_field_positive_block
+        )
+        scaling_including_spatial = (
+            scaling_factor
+            / (radius_step_in_inverse_GeV * radius_step_in_inverse_GeV)
         )
         nearer_center_with_itself = (
             positive_block.quadratics_for_variable_names(
                 first_field=nearer_center,
                 second_field=nearer_center,
-                scaling_factor=scaling_factor
+                scaling_factor=scaling_including_spatial
             )
         )
         nearer_center_with_nearer_edge = (
             positive_block.quadratics_for_variable_names(
                 first_field=nearer_center,
                 second_field=nearer_edge,
-                scaling_factor=-scaling_factor
+                scaling_factor=-scaling_including_spatial
             )
         )
-        # TODO: set up constant blocks as templates, get dicts, add, return
-
+        nearer_edge_with_nearer_center = (
+            positive_block.quadratics_for_variable_names(
+                first_field=nearer_edge,
+                second_field=nearer_center,
+                scaling_factor=-scaling_including_spatial
+            )
+        )
+        nearer_edge_with_itself = (
+            positive_block.quadratics_for_variable_names(
+                first_field=nearer_edge,
+                second_field=nearer_edge,
+                scaling_factor=scaling_including_spatial
+            )
+        )
+        kinetic_weights = nearer_center_with_itself
+        kinetic_weights.add(nearer_center_with_nearer_edge)
+        kinetic_weights.add(nearer_edge_with_nearer_center)
+        kinetic_weights.add(nearer_edge_with_itself)
+        return kinetic_weights
 
     def potential_weights(
             self,
             *,
             first_field: FieldAtPoint,
-            second_field: Optional[FieldAtPoint] = None
+            second_field: Optional[FieldAtPoint] = None,
+            scaling_factor: float
     ) -> WeightAccumulator:
-        first_field_domain_wall_weights = self.first_field_domain_wall_template
+        if not second_field:
+            return (
+                self.potential_weight_template.first_linears_for_variable_names(
+                    field_at_point=first_field,
+                    scaling_factor=scaling_factor
+                )
+            )
+        # TODO: do this properly
+        return WeightAccumulator(
+            linear_weights={},
+            quadratic_weights={}
+        )
+
 

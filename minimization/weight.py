@@ -9,6 +9,16 @@ def add_to_each(*, in_: List[float], from_: List[float]):
         for i, item_to_add in enumerate(from_):
             in_[i] += item_to_add
 
+def scaled_linears_for_variable_names(
+        *,
+        variable_names: List[str],
+        linear_weights: List[float],
+        scaling_factor: float
+) -> Dict[str, float]:
+    return {
+        n: w * scaling_factor for n, w in zip(variable_names, linear_weights)
+    }
+
 
 class WeightAccumulator:
     def __init__(
@@ -101,25 +111,31 @@ class WeightTemplate:
 
     def first_linears_for_variable_names(
             self,
-            field_at_point: FieldAtPoint
+            *,
+            field_at_point: FieldAtPoint,
+            scaling_factor: float = 1.0
     ) -> Dict[str, float]:
-        return dict(
-            zip(field_at_point.binary_variable_names, self.first_linear_weights)
+        return scaled_linears_for_variable_names(
+            variable_names=field_at_point.binary_variable_names,
+            linear_weights=self.first_linear_weights,
+            scaling_factor=scaling_factor
         )
 
     def second_linears_for_variable_names(
             self,
-            field_at_point: FieldAtPoint
+            *,
+            field_at_point: FieldAtPoint,
+            scaling_factor: float = 1.0
     ) -> Dict[str, float]:
-        return dict(
-            zip(
-                field_at_point.binary_variable_names,
-                self.second_linear_weights
-            )
+        return scaled_linears_for_variable_names(
+            variable_names=field_at_point.binary_variable_names,
+            linear_weights=self.second_linear_weights,
+            scaling_factor=scaling_factor
         )
 
     def quadratics_for_variable_names(
             self,
+            *,
             first_field: FieldAtPoint,
             second_field: FieldAtPoint,
             scaling_factor: float = 1.0
