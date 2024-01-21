@@ -7,7 +7,7 @@ def weights_for_difference(
         at_smaller_radius: FieldAtPoint,
         at_larger_radius: FieldAtPoint,
         radius_difference_in_inverse_GeV: float
-    ) -> BiasAccumulator:
+) -> BiasAccumulator:
     """
     This gives the weights for the part of the kinetic term for a single field
     over a single step in radius. We could try to arrange things so that each

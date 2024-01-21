@@ -15,13 +15,15 @@ def get_sampler(sampler_name: str) -> Sampler:
     return SimulatedAnnealingSampler()
 
 
+# TODO: take sampling function (from configuration? from bubble?) rather than always "sample_ising"
+# (might be able to simplify using kwargs idiomatically)
 def get_sample(
         *,
         spin_biases: BiasAccumulator,
         message_for_Leap: str = None,
         number_of_shots: int = 100,
         sampler_name: str
-    ) -> SampleSet:
+) -> SampleSet:
     chosen_sampler = get_sampler(sampler_name)
     if message_for_Leap and (sampler_name == "dwave"):
         return chosen_sampler.sample_ising(

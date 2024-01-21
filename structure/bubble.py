@@ -25,7 +25,7 @@ class ProfileAtPoint:
             spatial_radius_in_inverse_GeV: float,
             first_field: FieldDefinition,
             second_field: Optional[FieldDefinition] = None
-        ):
+    ):
         self.spatial_point_identifier = spatial_point_identifier
         self.spatial_radius_in_inverse_GeV = spatial_radius_in_inverse_GeV
         self.first_field = FieldAtPoint(
@@ -83,7 +83,7 @@ class BubbleProfile:
     def map_radius_labels_to_field_strengths_from_lowest_sample(
             self,
             sample_set: SampleSet
-        ) -> Dict[str, Dict[str, float]]:
+    ) -> Dict[str, Dict[str, float]]:
         lowest_energy_sample = minimization.sampling.get_lowest_sample_from_set(
             sample_set
         )
@@ -98,7 +98,7 @@ class BubbleProfile:
     def lowest_sample_as_CSV_file_content(
             self,
             sample_set: SampleSet
-        ) -> List[str]:
+    ) -> List[str]:
         lowest_energy_sample = minimization.sampling.get_lowest_sample_from_set(
             sample_set
         )
@@ -118,7 +118,7 @@ class BubbleProfile:
             *,
             row_index: int,
             sample_set: SampleSet
-        ) -> str:
+    ) -> str:
         radius_in_inverse_GeV = (
             row_index * self.configuration.spatial_step_in_inverse_GeV
         )
@@ -150,7 +150,7 @@ class BubbleProfile:
         first_field_kinetic = self._get_maximum_kinetic_for_single_field(
             self.configuration.first_field.step_in_GeV,
             self.configuration.number_of_values_for_first_field
-        )
+    )
         maximum_kinetic = (
             first_field_kinetic if not self.configuration.second_field
             else (
@@ -176,7 +176,7 @@ class BubbleProfile:
             self,
             field_step_in_GeV: float,
             number_of_values_for_field: int
-        ) -> float:
+    ) -> float:
         maximum_field_difference = (
             field_step_in_GeV * (number_of_values_for_field - 1.0)
         )
@@ -233,7 +233,7 @@ class BubbleProfile:
     def _get_potential_weights(
             self,
             potential_values: List[List[float]]
-        ) -> BiasAccumulator:
+    ) -> BiasAccumulator:
         calculated_biases = BiasAccumulator()
         # The fields at the bubble center and edge are fixed so it is not worth
         # evaluating the potential there.
@@ -253,7 +253,7 @@ class BubbleProfile:
     def _get_kinetic_weights(
             self,
             spatial_step: float
-        ) -> BiasAccumulator:
+    ) -> BiasAccumulator:
         calculated_biases = BiasAccumulator()
         previous_profile = self.fields_at_points[0]
         for profile_at_point in self.fields_at_points[1:]:

@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
     <sampler_name>dwave</sampler_name>
+    <variable_type>spin</variable_type>
     <output_CSV_filename>SM_Higgs_r10_f5_s1000_cloud.csv</output_CSV_filename>
     <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
     <number_of_spatial_steps>10</number_of_spatial_steps>

@@ -7,7 +7,7 @@ def weights_for(
         *,
         potential_in_quartic_GeV_per_field_step: List[float],
         single_field: FieldAtPoint
-    ) -> BiasAccumulator:
+) -> BiasAccumulator:
         """
         This function adds calculates weights for spin variables of a single
         field represented by a set of FieldAtPoint objects, one for every

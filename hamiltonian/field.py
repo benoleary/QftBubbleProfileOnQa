@@ -13,7 +13,7 @@ class FieldDefinition:
             upper_bound_in_GeV: float,
             true_vacuum_value_in_GeV: float,
             false_vacuum_value_in_GeV: float
-        ):
+    ):
         if number_of_values < 2:
             raise ValueError("Need a range of at least 2 values for the field")
         if lower_bound_in_GeV >= upper_bound_in_GeV:
@@ -73,23 +73,25 @@ class FieldDefinition:
 class FieldAtPoint:
     """
     This class represents the strength of a QFT scalar field at a point in
-    space-time using spin variables in the Ising chain domain wall model. The
-    field takes (number_of_values_for_field + 1) spin variables so that there
-    can be a single domain wall, with down spins (normally represented as |1> or
-    sometimes informally as 1) on the lower-index side and up spins (|0> or 0)
-    on the higher-index side.
+    space-time in the Ising chain domain wall model. The field is represented by
+    (number_of_values_for_field + 1) variables so that there can be a single
+    domain wall, with down spins or on bits (normally represented as |1> or
+    sometimes informally as 1) on the lower-index side and up spins or off bits
+    (|0> or 0) on the higher-index side.
     """
     def __init__(
             self,
             *,
             field_definition: FieldDefinition,
             spatial_point_identifier: str
-        ):
+    ):
         """
-        The constructor just sets up the names for the spin variables, since the
-        sample_ising methods of D-Wave samplers just want dicts of names of spin
-        variables mapped to linear biases and dicts of pairs of names of spin
-        variables mapped to quadratic biases.
+        The constructor just sets up the names for the variables, since the
+        sampling methods of D-Wave samplers just want dicts of pairs of names
+        of variables mapped to quadratic biases and, depending on whether using
+        spin or bit variables, dicts of spin variables mapped to linear weights
+        or more entries in the dict of pairs of names but with bit variables
+        self-correlating mapped to their linear biases.
         """
         self.field_definition = field_definition
         # The variable names are indexed from zero, so if we have say 10 values
@@ -98,9 +100,8 @@ class FieldAtPoint:
             f"{field_definition.field_name}_{spatial_point_identifier}_",
             field_definition.number_of_values - 1
         )
-        # We need a binary variable fixed to |1> at the start and another fixed
-        # to |0> at the end, in addition to the variables which can actually
-        # vary.
+        # We need a variable fixed to |1> at the start and another fixed to |0>
+        # at the end, in addition to the variables which can actually vary.
         self.binary_variable_names = [
             name_function(i)
             for i in range(field_definition.number_of_values + 1)
@@ -111,7 +112,7 @@ class FieldAtPoint:
             *,
             end_spin_weight: float,
             spin_alignment_weight: float
-        ) -> BiasAccumulator:
+    ) -> BiasAccumulator:
         """
         This returns the weights to ensure that the spins are valid for the
         Ising-chain domain wall model, in the form for sample_ising: a dict of
@@ -152,7 +153,7 @@ class FieldAtPoint:
             *,
             fixing_weight: float,
             number_of_down_spins: int
-        ) -> BiasAccumulator:
+    ) -> BiasAccumulator:
         """
         This returns the weights to fix the spins so that there are
         number_of_down_spins |1>s. Negative numbers can be given to instead

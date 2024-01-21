@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
     <sampler_name>kerberos</sampler_name>
+    <variable_type>spin</variable_type>
     <output_CSV_filename>ACS_zero_epsilon_N50_M50_cloud.csv</output_CSV_filename>
     <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
     <number_of_spatial_steps>50</number_of_spatial_steps>
