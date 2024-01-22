@@ -18,7 +18,7 @@ def get_sampler(sampler_name: str) -> Sampler:
 # TODO: replace with using SamplePovider.get_sample
 def get_sample(
         *,
-        spin_biases: BiasAccumulator,
+        spin_biases: WeightAccumulator,
         message_for_Leap: str = None,
         number_of_shots: int = 100,
         sampler_name: str
@@ -52,6 +52,8 @@ def get_lowest_sample_from_set(sample_set: SampleSet) -> Dict[str, float]:
     return lowest_energy_sample
 
 
+# TODO: define functions to give something for perform_sampling.
+
 class SamplePovider:
     """
     This class encapsulates both which dimod.Sampler is used and whether the
@@ -72,4 +74,4 @@ class SamplePovider:
 
     def get_sample(self, weight_container: WeightAccumulator) -> SampleSet:
         # TODO: message_for_Leap and other kwargs
-        return self.perform_sampling(weight_container)
+        return self.perform_sampling(self.chosen_sampler, weight_container)
