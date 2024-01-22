@@ -3,11 +3,10 @@ from dimod import SampleSet
 import minimization.sampling
 import minimization.variable
 from minimization.weight import BiasAccumulator
-from configuration.configuration import DiscreteConfiguration
+from configuration.configuration import SpatialLatticeConfiguration
 from hamiltonian.field import FieldAtPoint, FieldDefinition
 import minimization.sampling
-import hamiltonian.kinetic
-import hamiltonian.potential
+from hamiltonian.hamiltonian import AnnealerHamiltonian
 
 
 _separation_character = ";"
@@ -48,7 +47,12 @@ class BubbleProfile:
     This class represents the field or fields at all the points of the bubble
     profile.
     """
-    def __init__(self, configuration: DiscreteConfiguration):
+    def __init__(
+            self,
+            *,
+            annealer_Hamiltonian: AnnealerHamiltonian,
+            spatial_lattice_configuration: SpatialLatticeConfiguration
+    ):
         """
         The constructor just sets up fields.
         """

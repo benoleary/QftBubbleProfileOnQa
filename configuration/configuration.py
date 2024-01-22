@@ -1,22 +1,16 @@
 from typing import List, Optional
+from dataclasses import dataclass
 from hamiltonian.field import FieldDefinition
 
 
-class DiscreteConfiguration:
+class QftModelConfiguration:
     def __init__(
             self,
             *,
             first_field: FieldDefinition,
             second_field: Optional[FieldDefinition] = None,
-            number_of_spatial_steps: int,
-            spatial_step_in_inverse_GeV: float,
-            volume_exponent: int,
-            potential_in_quartic_GeV_per_field_step: List[List[float]],
-            sampler_name: Optional[str] = None,
-            number_of_shots: Optional[int] = None,
-            output_CSV_filename: Optional[str] = None,
-            command_for_gnuplot: Optional[str] = None
-        ):
+            potential_in_quartic_GeV_per_field_step: List[List[float]]
+    ):
         self.number_of_values_for_second_field = len(
             potential_in_quartic_GeV_per_field_step
         )
@@ -33,9 +27,6 @@ class DiscreteConfiguration:
             )
         self.first_field = first_field
         self.second_field = second_field
-        self.number_of_spatial_steps = number_of_spatial_steps
-        self.spatial_step_in_inverse_GeV = spatial_step_in_inverse_GeV
-        self.volume_exponent = volume_exponent
         self.potential_in_quartic_GeV_per_field_step = (
             potential_in_quartic_GeV_per_field_step
         )
@@ -50,7 +41,18 @@ class DiscreteConfiguration:
         self.maximum_potential_weight_difference = (
             self.maximum_potential - self.minimum_potential
         )
-        self.sampler_name = sampler_name
-        self.number_of_shots = number_of_shots
-        self.output_CSV_filename = output_CSV_filename
-        self.command_for_gnuplot = command_for_gnuplot
+
+
+@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+class SpatialLatticeConfiguration:
+    number_of_spatial_steps: int
+    spatial_step_in_inverse_GeV: float
+    volume_exponent: int
+
+
+@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+class AnnealerConfiguration:
+    sampler_name: str = "default"
+    number_of_shots: Optional[int] = None
+    output_CSV_filename: Optional[str] = None
+    command_for_gnuplot: Optional[str] = None
