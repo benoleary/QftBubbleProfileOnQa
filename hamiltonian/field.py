@@ -1,6 +1,6 @@
 from typing import Dict
 import minimization.variable
-from minimization.weight import BiasAccumulator
+from minimization.weight import WeightAccumulator
 
 
 class FieldDefinition:
@@ -28,12 +28,14 @@ class FieldDefinition:
         false_vacuum_in_bounds = in_bounds(false_vacuum_value_in_GeV)
         if not (true_vacuum_in_bounds and false_vacuum_in_bounds):
             raise ValueError("Neither vacuum can be outside bounds for field")
+
         self.field_name = field_name
         self.number_of_values = number_of_values
         self.lower_bound_in_GeV = lower_bound_in_GeV
         self.upper_bound_in_GeV = upper_bound_in_GeV
         self.true_vacuum_value_in_GeV = true_vacuum_value_in_GeV
         self.false_vacuum_value_in_GeV = false_vacuum_value_in_GeV
+
         # The field step size is positive because
         # upper_bound_in_GeV > lower_bound_in_GeV and
         # number_of_values >= 2.
@@ -55,6 +57,7 @@ class FieldDefinition:
             (vacuum_value_in_GeV - self.lower_bound_in_GeV)
             / self.step_in_GeV
         )
+
         # We check whether rounding up instead of down would get closer to the
         # value in GeV.
         reconstructed_value_in_GeV = (
@@ -106,89 +109,6 @@ class FieldAtPoint:
             name_function(i)
             for i in range(field_definition.number_of_values + 1)
         ]
-
-    def weights_for_domain_wall(
-            self,
-            *,
-            end_spin_weight: float,
-            spin_alignment_weight: float
-    ) -> BiasAccumulator:
-        """
-        This returns the weights to ensure that the spins are valid for the
-        Ising-chain domain wall model, in the form for sample_ising: a dict of
-        linear biases, which could be represented by a vector, and a dict of
-        quadratic biases, which could be represented as an upper-triangular
-        matrix of correlation weights, with zeros on the diagonal. (Apparently
-        it is not necessary that the dict is "upper-triangular", the middleware
-        seems to cope.)
-        """
-        # First, we set the weights to fix the ends so that there is a domain of
-        # 1s from the first index and a domain of 0s ending at the last index.
-        # The signs are this way because we want the first spin to be |1> which
-        # multiplies its weight by -1 in the objective function, and the last
-        # spin to be |0> which multiplies its weight by +1.
-        first_variable = self.binary_variable_names[0]
-        last_variable = self.binary_variable_names[-1]
-        spin_biases = BiasAccumulator(
-            initial_linears={
-                first_variable: end_spin_weight,
-                last_variable: -end_spin_weight
-            }
-        )
-        # Next, each pair of nearest neighbors gets weighted to favor having the
-        # same values - which is either (-1)^2 or (+1)^2, so +1, while opposite
-        # values multiply the weighting by (-1) * (+1) = -1. Therefore, a
-        # negative weighting will penalize opposite spins with a positive
-        # contribution to the objective function.
-        lower_variable = first_variable
-        for higher_variable in self.binary_variable_names[1:]:
-            spin_biases.add_quadratics({
-                (lower_variable, higher_variable): -spin_alignment_weight
-            })
-            lower_variable = higher_variable
-        return spin_biases
-
-    def weights_for_fixed_value(
-            self,
-            *,
-            fixing_weight: float,
-            number_of_down_spins: int
-    ) -> BiasAccumulator:
-        """
-        This returns the weights to fix the spins so that there are
-        number_of_down_spins |1>s. Negative numbers can be given to instead
-        specify -number_of_down_spins |0>s, similar to negative indices in a
-        Python array.
-        """
-        if number_of_down_spins == 0:
-            raise ValueError(
-                "Input of 0 (or -0) should set all spins to |1> (or |0>) but"
-                " this would prevent a domain wall"
-            )
-        if number_of_down_spins > self.field_definition.number_of_values:
-            raise ValueError(
-                f"At most {self.field_definition.number_of_values} can be set"
-                f" to |1>, {number_of_down_spins} were requested"
-            )
-        if -number_of_down_spins > self.field_definition.number_of_values:
-            raise ValueError(
-                f"At most {self.field_definition.number_of_values} can be set"
-                f" to |0>, {-number_of_down_spins} were requested (as negative"
-                " input)"
-            )
-        spin_biases = BiasAccumulator(
-            initial_linears={
-                binary_variable_name: fixing_weight
-                for binary_variable_name
-                in self.binary_variable_names[:number_of_down_spins]
-            }
-        )
-        spin_biases.add_linears({
-            binary_variable_name: -fixing_weight
-            for binary_variable_name
-            in self.binary_variable_names[number_of_down_spins:]
-        })
-        return spin_biases
 
     def in_GeV(self, spins_from_sample: Dict[str, int]):
         # This adds field_step_in_GeV to offset_from_origin_in_GeV for every |1>

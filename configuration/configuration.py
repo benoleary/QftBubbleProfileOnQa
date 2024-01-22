@@ -30,17 +30,6 @@ class QftModelConfiguration:
         self.potential_in_quartic_GeV_per_field_step = (
             potential_in_quartic_GeV_per_field_step
         )
-        self.minimum_potential = potential_in_quartic_GeV_per_field_step[0][0]
-        self.maximum_potential = self.minimum_potential
-        for potential_row in self.potential_in_quartic_GeV_per_field_step:
-            for potential_value in potential_row:
-                if potential_value < self.minimum_potential:
-                    self.minimum_potential = potential_value
-                if potential_value > self.maximum_potential:
-                    self.maximum_potential = potential_value
-        self.maximum_potential_weight_difference = (
-            self.maximum_potential - self.minimum_potential
-        )
 
 
 @dataclass(kw_only=True, frozen=True, repr=False, eq=False)

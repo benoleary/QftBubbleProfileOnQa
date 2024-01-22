@@ -5,9 +5,11 @@ from hamiltonian.field import FieldAtPoint
 SelfType = TypeVar("SelfType", bound="WeightAccumulator")
 T = TypeVar("T")
 
+
 def add_to_each(*, in_: List[float], from_: List[float]):
         for i, item_to_add in enumerate(from_):
             in_[i] += item_to_add
+
 
 def scaled_linears_for_variable_names(
         *,
@@ -16,7 +18,7 @@ def scaled_linears_for_variable_names(
         scaling_factor: float
 ) -> Dict[str, float]:
     return {
-        n: w * scaling_factor for n, w in zip(variable_names, linear_weights)
+        n: (w * scaling_factor) for n, w in zip(variable_names, linear_weights)
     }
 
 
