@@ -1,8 +1,8 @@
-from typing import Dict
+from typing import Callable, Dict
 from dwave.system import DWaveSampler, EmbeddingComposite
 from hybrid.reference.kerberos import KerberosSampler
 from dimod import ExactSolver, Sampler, SampleSet, SimulatedAnnealingSampler
-from minimization.weight import BiasAccumulator
+from minimization.weight import WeightAccumulator
 
 
 def get_sampler(sampler_name: str) -> Sampler:
@@ -15,8 +15,7 @@ def get_sampler(sampler_name: str) -> Sampler:
     return SimulatedAnnealingSampler()
 
 
-# TODO: take sampling function (from configuration? from bubble?) rather than always "sample_ising"
-# (might be able to simplify using kwargs idiomatically)
+# TODO: replace with using SamplePovider.get_sample
 def get_sample(
         *,
         spin_biases: BiasAccumulator,
@@ -51,3 +50,26 @@ def get_lowest_sample_from_set(sample_set: SampleSet) -> Dict[str, float]:
         )
     )
     return lowest_energy_sample
+
+
+class SamplePovider:
+    """
+    This class encapsulates both which dimod.Sampler is used and whether the
+    weights are to be interpreted as bit weights or spin weights.
+    """
+    def __init__(
+            self,
+            *,
+            message_for_Leap: str = None,
+            number_of_shots: int = 100,
+            sampler_name: str,
+            perform_sampling: Callable[[Sampler, WeightAccumulator], SampleSet]
+    ):
+        self.message_for_Leap = message_for_Leap
+        self.number_of_shots = number_of_shots
+        self.chosen_sampler = get_sampler(sampler_name)
+        self.perform_sampling = perform_sampling
+
+    def get_sample(self, weight_container: WeightAccumulator) -> SampleSet:
+        # TODO: message_for_Leap and other kwargs
+        return self.perform_sampling(weight_container)

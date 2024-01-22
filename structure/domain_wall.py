@@ -1,6 +1,8 @@
-from typing import Protocol
+from typing import List, Protocol
+from structure.point import ProfileAtPoint
 from hamiltonian.field import FieldAtPoint
 from minimization.weight import WeightAccumulator
+
 
 class DomainWallWeighter(Protocol):
     """
@@ -8,12 +10,12 @@ class DomainWallWeighter(Protocol):
     weights from Hamiltonian terms which set up the Ising-chain domain wall
     model for an annealer.
     """
-    def weights_for_domain_wall(
+    def weights_for_domain_walls(
             self,
             *,
-            field_at_point: FieldAtPoint,
-            end_spin_weight: float,
-            spin_alignment_weight: float
+            profiles_at_points: List[ProfileAtPoint],
+            end_weight: float,
+            alignment_weight: float
     ) -> WeightAccumulator:
         raise NotImplementedError("DomainWallWeighter is just a Protocol")
 

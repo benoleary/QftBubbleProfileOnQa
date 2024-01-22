@@ -1,8 +1,8 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dimod import SampleSet
 from configuration.configuration import SpatialLatticeConfiguration
-from hamiltonian.field import FieldAtPoint, FieldDefinition
 from hamiltonian.hamiltonian import AnnealerHamiltonian
+from structure.point import ProfileAtPoint
 import minimization.sampling
 import minimization.variable
 from minimization.weight import WeightAccumulator
@@ -10,36 +10,6 @@ from structure.domain_wall import DomainWallWeighter
 
 
 _separation_character = ";"
-
-
-class ProfileAtPoint:
-    """
-    This class represents the field or fields at a single point on the bubble
-    profile.
-    """
-    def __init__(
-            self,
-            *,
-            spatial_point_identifier: str,
-            spatial_radius_in_inverse_GeV: float,
-            first_field: FieldDefinition,
-            second_field: Optional[FieldDefinition] = None
-    ):
-        self.spatial_point_identifier = spatial_point_identifier
-        self.spatial_radius_in_inverse_GeV = spatial_radius_in_inverse_GeV
-        self.first_field = FieldAtPoint(
-            field_definition=first_field,
-            spatial_point_identifier=spatial_point_identifier
-        )
-        self.second_field = None if not second_field else FieldAtPoint(
-            field_definition=second_field,
-            spatial_point_identifier=spatial_point_identifier
-        )
-
-    def get_fields(self) -> List[FieldAtPoint]:
-        if not self.second_field:
-            return [self.first_field]
-        return [self.first_field, self.second_field]
 
 
 class BubbleProfile:
@@ -64,6 +34,7 @@ class BubbleProfile:
             "r",
             spatial_lattice_configuration.number_of_spatial_steps
         )
+
         self.first_field = annealer_Hamiltonian.get_first_field_definition()
         self.second_field = annealer_Hamiltonian.get_second_field_definition()
 
@@ -85,10 +56,13 @@ class BubbleProfile:
             create_profile_at_point(spatial_index=i)
             for i in range(self.number_of_point_profiles)
         ]
-        self.maximum_variable_weight = self._get_maximum_variable_weight()
-        self.domain_wall_alignment_weight = 2.0 * self.maximum_variable_weight
-        self.single_spin_fixing_weight = 2.0 * self.domain_wall_alignment_weight
-        self.spin_biases = self._set_up_weights()
+        maximum_variable_weight = self._get_maximum_variable_weight()
+        domain_wall_alignment_weight = 2.0 * maximum_variable_weight
+        domain_end_fixing_weight = 2.0 * domain_wall_alignment_weight
+        self.annealing_weights = self._set_up_weights(
+            alignment_weight=domain_wall_alignment_weight,
+            end_weight=domain_end_fixing_weight
+        )
 
     def map_radius_labels_to_field_strengths_from_lowest_sample(
             self,
@@ -165,15 +139,42 @@ class BubbleProfile:
             + self.annealer_Hamiltonian.get_maximum_potential_difference()
         ) * maximum_volume_factor
 
-    def _set_up_weights(self) -> WeightAccumulator:
+    def _set_up_weights(
+            self,
+            *,
+            end_weight: float,
+            alignment_weight: float
+    ) -> WeightAccumulator:
         # We do the different terms in separate methods so that it is easier to
         # read.
-        calculated_biases = self._get_structure_weights()
-        calculated_biases.add(self._get_potential_weights())
-        calculated_biases.add(self._get_kinetic_weights())
-        return calculated_biases
+        calculated_weights = self._get_structure_weights(
+            end_weight=end_weight,
+            alignment_weight=alignment_weight
+        )
+        calculated_weights.add(self._get_potential_weights())
+        calculated_weights.add(self._get_kinetic_weights())
+        return calculated_weights
 
-    def _get_fixed_center_and_edge_weights(self) -> WeightAccumulator:
+    def _get_structure_weights(
+            self,
+            *,
+            end_weight: float,
+            alignment_weight: float
+    ) -> WeightAccumulator:
+        calculated_weights = self._get_fixed_center_and_edge_weights(end_weight)
+        calculated_weights.add(
+            self.domain_wall_weighter.weights_for_domain_walls(
+                profiles_at_points=self.fields_at_points[1:-1],
+                end_weight=end_weight,
+                alignment_weight=alignment_weight
+            )
+        )
+        return calculated_weights
+
+    def _get_fixed_center_and_edge_weights(
+            self,
+            end_weight:float
+    ) -> WeightAccumulator:
         """
         This only works in the assumption of a single field which is set to
         1000... (or as many 1s as implied by the true vacuum in steps according
@@ -182,46 +183,28 @@ class BubbleProfile:
         definition object) at the edge, which is why the second field is
         ignored.
         """
-        # TODO: enhance for second field
         center_first_field = self.fields_at_points[0].first_field
         first_field_definition = center_first_field.field_definition
-        calculated_biases = (
-            center_first_field.weights_for_fixed_value(
-                fixing_weight=self.single_spin_fixing_weight,
-                number_of_down_spins=(
+        calculated_weights = (
+            self.domain_wall_weighter.weights_for_fixed_value(
+                 field_at_point=center_first_field,
+                 fixing_weight=end_weight,
+                 number_of_ones=(
                     1 + first_field_definition.true_vacuum_value_in_steps
                 )
             )
         )
-        calculated_biases.add(
-            self.fields_at_points[-1].first_field.weights_for_fixed_value(
-                fixing_weight=self.single_spin_fixing_weight,
-                number_of_down_spins=(
+        calculated_weights.add(
+            self.domain_wall_weighter.weights_for_fixed_value(
+                 field_at_point=self.fields_at_points[-1].first_field,
+                 fixing_weight=end_weight,
+                 number_of_ones=(
                     1 + first_field_definition.false_vacuum_value_in_steps
                 )
             )
         )
-        return calculated_biases
-
-    def _get_structure_weights(self) -> WeightAccumulator:
-        calculated_biases = self._get_fixed_center_and_edge_weights()
-        for profile_at_point in self.fields_at_points[1:-1]:
-            calculated_biases.add(
-                self.domain_wall_weighter.weights_for_domain_wall(
-                    field_at_point=profile_at_point.first_field,
-                    end_spin_weight=self.single_spin_fixing_weight,
-                    spin_alignment_weight=self.domain_wall_alignment_weight
-                )
-            )
-            if profile_at_point.second_field:
-                calculated_biases.add(
-                    self.domain_wall_weighter.weights_for_domain_wall(
-                        field_at_point=profile_at_point.second_field,
-                        end_spin_weight=self.single_spin_fixing_weight,
-                        spin_alignment_weight=self.domain_wall_alignment_weight
-                    )
-                )
-        return calculated_biases
+        # TODO: enhance for second field
+        return calculated_weights
 
     def _get_potential_weights(self) -> WeightAccumulator:
         calculated_biases = WeightAccumulator()

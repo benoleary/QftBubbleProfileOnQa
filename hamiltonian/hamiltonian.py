@@ -22,12 +22,6 @@ class AnnealerHamiltonian(Protocol):
     def get_maximum_potential_difference(self) -> float:
         raise NotImplementedError("AnnealerHamiltonian is just a Protocol")
 
-    def domain_wall_weights(
-            self,
-            field_at_point: FieldAtPoint
-    ) -> WeightAccumulator:
-        raise NotImplementedError("AnnealerHamiltonian is just a Protocol")
-
     def kinetic_weights(
             self,
             *,
