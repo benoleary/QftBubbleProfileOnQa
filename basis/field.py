@@ -1,6 +1,6 @@
-from typing import Dict
-import minimization.variable
-from minimization.weight import WeightAccumulator
+from typing import Dict, List, Optional
+
+import basis.variable
 
 
 class FieldDefinition:
@@ -99,7 +99,7 @@ class FieldAtPoint:
         self.field_definition = field_definition
         # The variable names are indexed from zero, so if we have say 10 values
         # for the field, we actually index 0 to 9 so use only 1 digit.
-        name_function = minimization.variable.name_for_index(
+        name_function = basis.variable.name_for_index(
             f"{field_definition.field_name}_{spatial_point_identifier}_",
             field_definition.number_of_values - 1
         )
@@ -118,3 +118,33 @@ class FieldAtPoint:
             if spins_from_sample.get(variable_name, 0) < 0:
                 total_in_GeV += self.field_definition.step_in_GeV
         return total_in_GeV
+
+
+class FieldCollectionAtPoint:
+    """
+    This class represents the field or fields at a single point on the bubble
+    profile.
+    """
+    def __init__(
+            self,
+            *,
+            spatial_point_identifier: str,
+            spatial_radius_in_inverse_GeV: float,
+            first_field: FieldDefinition,
+            second_field: Optional[FieldDefinition] = None
+    ):
+        self.spatial_point_identifier = spatial_point_identifier
+        self.spatial_radius_in_inverse_GeV = spatial_radius_in_inverse_GeV
+        self.first_field = FieldAtPoint(
+            field_definition=first_field,
+            spatial_point_identifier=spatial_point_identifier
+        )
+        self.second_field = None if not second_field else FieldAtPoint(
+            field_definition=second_field,
+            spatial_point_identifier=spatial_point_identifier
+        )
+
+    def get_fields(self) -> List[FieldAtPoint]:
+        if not self.second_field:
+            return [self.first_field]
+        return [self.first_field, self.second_field]

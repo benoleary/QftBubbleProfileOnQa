@@ -1,4 +1,4 @@
-from hamiltonian.field import FieldAtPoint, FieldDefinition
+from basis.field import FieldAtPoint, FieldDefinition
 
 
 class TestFieldAtPoint():

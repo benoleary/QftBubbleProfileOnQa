@@ -1,8 +1,9 @@
 from typing import List, Optional
-from hamiltonian.field import FieldDefinition, FieldAtPoint
-from hamiltonian.hamiltonian import HasDiscretizedPotential
+
+from basis.field import FieldDefinition, FieldAtPoint
+from dynamics.hamiltonian import HasDiscretizedPotential
+from input.configuration import QftModelConfiguration
 from minimization.weight import WeightAccumulator, WeightTemplate
-from configuration.configuration import QftModelConfiguration
 
 
 class SpinHamiltonian(HasDiscretizedPotential):
@@ -79,11 +80,11 @@ class SpinHamiltonian(HasDiscretizedPotential):
         )
         return WeightAccumulator(
             linear_weights=weight_template.first_linears_for_variable_names(
-                field_at_point
+                field_at_point.binary_variable_names
             ),
             quadratic_weights=weight_template.quadratics_for_variable_names(
-                first_field=field_at_point,
-                second_field=field_at_point
+                first_variable_names=field_at_point.binary_variable_names,
+                second_variable_names=field_at_point.binary_variable_names
             )
         )
 
@@ -106,8 +107,8 @@ class SpinHamiltonian(HasDiscretizedPotential):
         kinetic_weights = WeightAccumulator(
             quadratic_weights=(
                 positive_block.quadratics_for_variable_names(
-                    first_field=nearer_center,
-                    second_field=nearer_center,
+                    first_variable_names=nearer_center.binary_variable_names,
+                    second_variable_names=nearer_center.binary_variable_names,
                     scaling_factor=scaling_including_spatial
                 )
             )
@@ -115,24 +116,24 @@ class SpinHamiltonian(HasDiscretizedPotential):
         # Nearer center with nearer edge
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_field=nearer_center,
-                second_field=nearer_edge,
+                first_variable_names=nearer_center.binary_variable_names,
+                second_variable_names=nearer_edge.binary_variable_names,
                 scaling_factor=-scaling_including_spatial
             )
         )
         # Nearer edge with nearer center
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_field=nearer_edge,
-                second_field=nearer_center,
+                first_variable_names=nearer_edge.binary_variable_names,
+                second_variable_names=nearer_center.binary_variable_names,
                 scaling_factor=-scaling_including_spatial
             )
         )
         # Nearer edge with itself
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_field=nearer_edge,
-                second_field=nearer_edge,
+                first_variable_names=nearer_edge.binary_variable_names,
+                second_variable_names=nearer_edge.binary_variable_names,
                 scaling_factor=scaling_including_spatial
             )
         )
@@ -148,7 +149,7 @@ class SpinHamiltonian(HasDiscretizedPotential):
         if not second_field:
             return (
                 self.potential_weight_template.first_linears_for_variable_names(
-                    field_at_point=first_field,
+                    variable_names=first_field.binary_variable_names,
                     scaling_factor=scaling_factor
                 )
             )

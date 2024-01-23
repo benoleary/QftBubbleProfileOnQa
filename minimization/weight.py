@@ -1,5 +1,4 @@
 from typing import Dict, List, Optional, Tuple, TypeVar
-from hamiltonian.field import FieldAtPoint
 
 
 SelfType = TypeVar("SelfType", bound="WeightAccumulator")
@@ -114,11 +113,11 @@ class WeightTemplate:
     def first_linears_for_variable_names(
             self,
             *,
-            field_at_point: FieldAtPoint,
+            variable_names: List[str],
             scaling_factor: float = 1.0
     ) -> Dict[str, float]:
         return scaled_linears_for_variable_names(
-            variable_names=field_at_point.binary_variable_names,
+            variable_names=variable_names,
             linear_weights=self.first_linear_weights,
             scaling_factor=scaling_factor
         )
@@ -126,11 +125,11 @@ class WeightTemplate:
     def second_linears_for_variable_names(
             self,
             *,
-            field_at_point: FieldAtPoint,
+            variable_names: List[str],
             scaling_factor: float = 1.0
     ) -> Dict[str, float]:
         return scaled_linears_for_variable_names(
-            variable_names=field_at_point.binary_variable_names,
+            variable_names=variable_names,
             linear_weights=self.second_linear_weights,
             scaling_factor=scaling_factor
         )
@@ -138,12 +137,12 @@ class WeightTemplate:
     def quadratics_for_variable_names(
             self,
             *,
-            first_field: FieldAtPoint,
-            second_field: FieldAtPoint,
+            first_variable_names: List[str],
+            second_variable_names: List[str],
             scaling_factor: float = 1.0
     ) -> Dict[str, float]:
         return {
             (f, s): (self.quadratic_weights[j][i] * scaling_factor)
-            for i, f in enumerate(first_field.binary_variable_names)
-            for j, s in enumerate(second_field.binary_variable_names)
+            for i, f in enumerate(first_variable_names)
+            for j, s in enumerate(second_variable_names)
         }

@@ -2,6 +2,7 @@ from typing import Dict, Protocol, Union
 from dwave.system import DWaveSampler, EmbeddingComposite
 from hybrid.reference.kerberos import KerberosSampler
 from dimod import ExactSolver, Sampler, SampleSet, SimulatedAnnealingSampler
+
 from minimization.weight import WeightAccumulator
 
 

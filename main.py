@@ -2,8 +2,8 @@ from typing import Optional
 import argparse
 import xml.etree.ElementTree
 import minimization.sampling
-import minimization.variable
-from configuration.configuration import DiscreteConfiguration, FieldDefinition
+import basis.variable
+from input.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
 
 
@@ -161,7 +161,7 @@ def main():
         sampler_name=input_configuration.sampler_name
     )
 
-    minimization.variable.print_bitstrings(
+    basis.variable.print_bitstrings(
         "lowest energies:",
         sample_set.lowest(atol=bubble_profile.maximum_variable_weight)
     )

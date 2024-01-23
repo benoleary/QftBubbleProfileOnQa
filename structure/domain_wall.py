@@ -1,6 +1,6 @@
 from typing import List, Protocol
-from structure.point import ProfileAtPoint
-from hamiltonian.field import FieldAtPoint
+
+from basis.field import FieldAtPoint, FieldCollectionAtPoint
 from minimization.weight import WeightAccumulator
 
 
@@ -13,7 +13,7 @@ class DomainWallWeighter(Protocol):
     def weights_for_domain_walls(
             self,
             *,
-            profiles_at_points: List[ProfileAtPoint],
+            profiles_at_points: List[FieldCollectionAtPoint],
             end_weight: float,
             alignment_weight: float
     ) -> WeightAccumulator:

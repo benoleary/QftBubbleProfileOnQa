@@ -1,10 +1,10 @@
 import dwave.inspector
 import minimization.sampling
-import minimization.variable
-from configuration.configuration import DiscreteConfiguration, FieldDefinition
+import basis.variable
+from input.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
-from hamiltonian.field import FieldAtPoint, FieldDefinition
-import hamiltonian.potential
+from basis.field import FieldAtPoint, FieldDefinition
+import dynamics.potential
 
 
 def inspect_single_chain_for_single_field(sampler_name: str):
@@ -32,7 +32,7 @@ def inspect_single_chain_for_single_field(sampler_name: str):
         sampler_name=sampler_name
     )
     lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-    minimization.variable.print_bitstrings(
+    basis.variable.print_bitstrings(
         "lowest energies for single field chain:",
         lowest_energy
     )
@@ -68,7 +68,7 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         number_of_shots=100,
         sampler_name=sampler_name
     )
-    minimization.variable.print_bitstrings(
+    basis.variable.print_bitstrings(
         "lowest energies for just kinetic term:",
         penalizing_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
@@ -77,13 +77,13 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     intermediate_field = test_bubble_profile.fields_at_points[1].first_field
     outer_field = test_bubble_profile.fields_at_points[2].first_field
     radius_step = test_configuration.spatial_step_in_inverse_GeV
-    kinetic_weights = hamiltonian.kinetic.weights_for_difference(
+    kinetic_weights = dynamics.kinetic.weights_for_difference(
         at_smaller_radius=center_field,
         at_larger_radius=intermediate_field,
         radius_difference_in_inverse_GeV=radius_step
     )
     kinetic_weights.add(
-        hamiltonian.kinetic.weights_for_difference(
+        dynamics.kinetic.weights_for_difference(
             at_smaller_radius=intermediate_field,
             at_larger_radius=outer_field,
             radius_difference_in_inverse_GeV=radius_step
@@ -101,7 +101,7 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         message_for_Leap="Just kinetic weights expecting zig-zag profile",
         sampler_name=sampler_name
     )
-    minimization.variable.print_bitstrings(
+    basis.variable.print_bitstrings(
         "lowest energies for inverted kinetic term:",
         rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
@@ -137,7 +137,7 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
         number_of_shots=100,
         sampler_name=sampler_name
     )
-    minimization.variable.print_bitstrings(
+    basis.variable.print_bitstrings(
         "lowest energies:",
         full_result.lowest(atol=100.0)
     )

@@ -1,6 +1,8 @@
 from typing import List, Optional, Protocol
-from hamiltonian.field import FieldAtPoint, FieldDefinition
+
+from basis.field import FieldAtPoint, FieldDefinition
 from minimization.weight import WeightAccumulator
+
 
 class AnnealerHamiltonian(Protocol):
     """

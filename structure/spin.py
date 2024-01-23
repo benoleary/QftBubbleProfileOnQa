@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
-from structure.point import ProfileAtPoint
-from hamiltonian.field import FieldAtPoint
+
+from basis.field import FieldAtPoint, FieldCollectionAtPoint
 from minimization.weight import WeightAccumulator, WeightTemplate
 
 class SpinDomainWallWeighter:
@@ -12,7 +12,7 @@ class SpinDomainWallWeighter:
     def weights_for_domain_walls(
             self,
             *,
-            profiles_at_points: List[ProfileAtPoint],
+            profiles_at_points: List[FieldCollectionAtPoint],
             end_weight: float,
             alignment_weight: float
     ) -> WeightAccumulator:
@@ -88,22 +88,22 @@ class SpinDomainWallWeighter:
 
 def _domain_wall_templates_for_first_and_second_fields(
         *,
-        profile_at_point: ProfileAtPoint,
+        fields_at_point: FieldCollectionAtPoint,
         end_weight: float,
         alignment_weight: float
 ) -> Tuple[WeightTemplate, Optional[WeightTemplate]]:
     first_field_template = _weights_for_domain_wall(
         number_of_spins=(
-            profile_at_point.first_field.field_definition.number_of_values
+            fields_at_point.first_field.field_definition.number_of_values
         ),
         end_weight=end_weight,
         alignment_weight=alignment_weight
     )
     second_field_template = (
-        None if not profile_at_point.second_field
+        None if not fields_at_point.second_field
         else _weights_for_domain_wall(
             number_of_spins=(
-                profile_at_point.second_field.field_definition.number_of_values
+                fields_at_point.second_field.field_definition.number_of_values
             ),
             end_weight=end_weight,
             alignment_weight=alignment_weight
@@ -163,7 +163,7 @@ def _domain_wall_weights_from_template(
     # other variables of the same field itself.
     return WeightAccumulator(
         linear_weights=field_template.first_linears_for_variable_names(
-            field_at_point
+            field_at_point.binary_variable_names
         ),
         quadratic_weights=field_template.quadratics_for_variable_names(
             first_field=field_at_point,

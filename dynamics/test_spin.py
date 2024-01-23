@@ -1,7 +1,9 @@
 from typing import Tuple
-from configuration.configuration import QftModelConfiguration
-from hamiltonian.field import FieldAtPoint, FieldDefinition
-from hamiltonian.spin import SpinHamiltonian
+import pytest
+
+from input.configuration import QftModelConfiguration
+from basis.field import FieldAtPoint, FieldDefinition
+from dynamics.spin import SpinHamiltonian
 
 
 _field_step_in_GeV = 7.0
@@ -11,6 +13,7 @@ _radius_step_in_inverse_GeV = 0.25
 _absolute_expected_weight = 98.0
 
 
+# TODO: tests with second field
 class TestSpinHamiltonian():
     def test_kinetic_weights_for_low_resolution_fields(self):
         """
@@ -20,7 +23,7 @@ class TestSpinHamiltonian():
         # Each field should have three valid bitstrings:
         # |1000>, |1100>, and |1110>.
         field_definition, lower_radius_field, upper_radius_field = (
-            self._set_up_fields(3)
+            self._set_up_fields_for_kinetic_tests(3)
         )
 
         test_Hamiltonian = SpinHamiltonian(
@@ -86,7 +89,7 @@ class TestSpinHamiltonian():
         # Each field should have four valid bitstrings:
         # |10000>, |11000>, |11100>, and |11110>.
         field_definition, lower_radius_field, upper_radius_field = (
-            self._set_up_fields(4)
+            self._set_up_fields_for_kinetic_tests(4)
         )
         test_Hamiltonian = SpinHamiltonian(
             QftModelConfiguration(
@@ -163,11 +166,57 @@ class TestSpinHamiltonian():
             expected_quadratic_weights == actual_weights.quadratic_biases
         ), "incorrect weights for quadratic biases"
 
-    def _set_up_fields(
+    def test_weights_for_potential_proportional_to_field_value(self):
+        # In this case, the linear term is irrelevant.
+        def linear_potential(field_value: int):
+            return (2.5 * field_value) + 10.0
+
+        number_of_potential_values = 5
+        field_definition = self._set_up_field_definition(
+            number_of_potential_values
+        )
+        discretized_potential = [
+            [linear_potential(f) for f in range(number_of_potential_values)]
+        ]
+
+        test_Hamiltonian = SpinHamiltonian(
+            QftModelConfiguration(
+                first_field=field_definition,
+                potential_in_quartic_GeV_per_field_step=discretized_potential
+            )
+        )
+        actual_weights = test_Hamiltonian.potential_weights(
+            first_field=FieldAtPoint(
+                field_definition=field_definition,
+                spatial_point_identifier="r"
+            ),
+            scaling_factor=1.0
+        )
+
+        actual_linear_weights = actual_weights.linear_weights
+
+        # The weights are actually just the differences which each |0> flipping
+        # to a |1> brings (with a factor of -0.5 because the spin flip itself
+        # brings a factor of (-1)-(+1) = -2).
+        expected_linear_weights = {
+            "T_r0_1": -1.25,
+            "T_r0_2": -1.25,
+            "T_r0_3": -1.25,
+            "T_r0_4": -1.25,
+        }
+        assert expected_linear_weights.keys() == actual_linear_weights.keys()
+
+        for expected_key in expected_linear_weights.keys():
+            assert (
+                pytest.approx(expected_linear_weights[expected_key])
+                == actual_linear_weights.get(expected_key, 0.0)
+            ), f"incorrect linear weight for {expected_key}"
+
+
+    def _set_up_field_definition(
             self,
             number_of_values_for_field
-        ) -> Tuple[FieldDefinition, FieldAtPoint, FieldAtPoint]:
-        field_name = "T"
+        ) -> FieldDefinition:
         # For example, if number_of_values_for_field = 3, then we want the field
         # to be
         # |1000> => _true_vacuum_value_in_GeV,
@@ -180,13 +229,21 @@ class TestSpinHamiltonian():
             _true_vacuum_value_in_GeV
             + ((number_of_values_for_field - 1) * _field_step_in_GeV)
         )
-        single_field_definition = FieldDefinition(
-            field_name=field_name,
+        return FieldDefinition(
+            field_name="T",
             number_of_values=number_of_values_for_field,
             lower_bound_in_GeV=_true_vacuum_value_in_GeV,
             upper_bound_in_GeV=upper_bound,
             true_vacuum_value_in_GeV=_true_vacuum_value_in_GeV,
             false_vacuum_value_in_GeV=upper_bound
+        )
+
+    def _set_up_fields_for_kinetic_tests(
+            self,
+            number_of_values_for_field
+        ) -> Tuple[FieldDefinition, FieldAtPoint, FieldAtPoint]:
+        single_field_definition = self._set_up_field_definition(
+            number_of_values_for_field
         )
         return (
             single_field_definition,

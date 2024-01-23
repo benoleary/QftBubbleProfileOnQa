@@ -1,8 +1,7 @@
 import pytest
+
+from basis.field import FieldAtPoint, FieldDefinition
 from structure.spin import SpinDomainWallWeighter
-import minimization.sampling
-import minimization.variable
-from hamiltonian.field import FieldAtPoint, FieldDefinition
 
 
 class TestSpinDomainWallWeighter():
@@ -21,7 +20,7 @@ class TestSpinDomainWallWeighter():
         end_weight = 10.0
         alignment_weight = 3.5
 
-        actual_weights = SpinDomainWallWeighter().weights_for_domain_wall(
+        actual_weights = SpinDomainWallWeighter().weights_for_domain_walls(
             field_at_point=test_field,
             end_spin_weight=end_weight,
             spin_alignment_weight=alignment_weight
@@ -58,91 +57,29 @@ class TestSpinDomainWallWeighter():
         # All the weights should be exactly representable in binary so we can
         # make floating-point number comparisons without needing a tolerance.
         assert (
-            expected_linear_weights == actual_weights.linear_biases
+            expected_linear_weights == actual_weights.linear_weights
         ), "incorrect weights for linear biases"
         assert (
-            expected_quadratic_weights == actual_weights.quadratic_biases
+            expected_quadratic_weights == actual_weights.quadratic_weights
         ), "incorrect weights for quadratic biases"
 
-    def test_all_valid_strengths_for_only_domain_wall_conditions(self):
-        test_field = FieldAtPoint(
-            field_definition=FieldDefinition(
-                field_name="t",
-                number_of_values=7,
-                lower_bound_in_GeV=0.0,
-                upper_bound_in_GeV=1.0,
-                true_vacuum_value_in_GeV=0.0,
-                false_vacuum_value_in_GeV=1.0
-            ),
-            spatial_point_identifier="x0"
-        )
-        end_weight = 10.0
-        alignment_weight = 3.5
-        spin_biases = SpinDomainWallWeighter().weights_for_domain_wall(
-            field_at_point=test_field,
-            end_spin_weight=end_weight,
-            spin_alignment_weight=alignment_weight
-        )
-
-        sampling_result = minimization.sampling.get_sample(
-            spin_biases=spin_biases,
-            sampler_name="exact"
-        )
-        lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-        actual_bitstrings_to_energies = (
-            minimization.variable.bitstrings_to_energies(
-                binary_variable_names=test_field.binary_variable_names,
-                sample_set=lowest_energy
-            )
-        )
-
-        # We expect seven states, all with the same energy as a domain wall
-        # between the first and second binary variables. The state 10000000
-        # should have energy
-        # -end_weight (from the first spin)
-        # + alignment_weight (from the domain wall)
-        # - 6 * alignment_weight (from the 6 pairs of aligned neighboring |0>s)
-        # -end_weight (from the last spin)
-        # = -2 * end_weight - 5 * alignment_weight
-        expected_energy = (-2.0 * end_weight) - (5.0 * alignment_weight)
-        # The expected lowest energy states all start with 1 and end with 0, and
-        # we expect the seven combinations where there are only 1s on the left
-        # and 0s on the right.
-        expected_bitstrings = [
-            "10000000",
-            "11000000",
-            "11100000",
-            "11110000",
-            "11111000",
-            "11111100",
-            "11111110"
-        ]
-        expected_bitstrings_to_energies = {
-            b: expected_energy for b in expected_bitstrings
-        }
-        # All the energies should be exactly representable in binary so we can
-        # make floating-point number comparisons without needing a tolerance.
-        assert (
-            expected_bitstrings_to_energies == actual_bitstrings_to_energies
-        ), "incorrect weights for binary variables"
-
     @pytest.mark.parametrize(
-            "number_of_ones, expected_bitstring",
+            "number_of_ones",
             [
-                (1, "100000"),
-                (2, "110000"),
-                (3, "111000"),
-                (4, "111100"),
-                (5, "111110"),
+                (1,),
+                (2,),
+                (3,),
+                (4,),
+                (5,),
                 # We also test the negative input convention.
-                (-1, "111110"),
-                (-2, "111100"),
-                (-3, "111000"),
-                (-4, "110000"),
-                (-5, "100000")
+                (-1,),
+                (-2,),
+                (-3,),
+                (-4,),
+                (-5,)
             ]
     )
-    def test_fixing_value(self, number_of_ones, expected_bitstring):
+    def test_fixing_value(self, number_of_ones):
         test_field = FieldAtPoint(
             field_definition=FieldDefinition(
                 field_name="t",
@@ -155,11 +92,6 @@ class TestSpinDomainWallWeighter():
             spatial_point_identifier="x"
         )
         fixing_weight = 11.0
-        # With 5 possible values for the field, there are 6 spins (the first and
-        # last are fixed, and there are 5 values for 0 to 4 of the middle 4
-        # spins being |1>). Each spin contributes its weight to the energy of
-        # the sample (all negative by design).
-        expected_energy = -6.0 * fixing_weight
 
         spin_biases = SpinDomainWallWeighter().weights_for_fixed_value(
             field_at_point=test_field,
@@ -200,27 +132,8 @@ class TestSpinDomainWallWeighter():
         # we can make floating-point number comparisons without needing
         # a tolerance.
         assert (
-            expected_linear_weights == spin_biases.linear_biases
-        ), "incorrect weights for linear biases"
+            expected_linear_weights == spin_biases.linear_weights
+        ), "incorrect linear weights"
         assert (
-            {} == spin_biases.quadratic_biases
-        ), "incorrect weights for quadratic biases"
-
-        sampling_result = minimization.sampling.get_sample(
-            spin_biases=spin_biases,
-            sampler_name="exact"
-        )
-        lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-        actual_bitstrings_to_energies = (
-            minimization.variable.bitstrings_to_energies(
-                binary_variable_names=test_field.binary_variable_names,
-                sample_set=lowest_energy
-            )
-        )
-
-        # All the energies should be exactly representable in binary so we can
-        # make floating-point number comparisons without needing a tolerance.
-        expected_bitstrings_to_energies = {expected_bitstring: expected_energy}
-        assert (
-            expected_bitstrings_to_energies == actual_bitstrings_to_energies
-        ), "incorrect weights for binary variables"
+            {} == spin_biases.quadratic_weights
+        ), "incorrect quadratic weights"

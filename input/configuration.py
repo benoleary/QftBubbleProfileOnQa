@@ -1,6 +1,7 @@
 from typing import List, Optional
 from dataclasses import dataclass
-from hamiltonian.field import FieldDefinition
+
+from basis.field import FieldDefinition
 
 
 class QftModelConfiguration:
@@ -45,3 +46,13 @@ class AnnealerConfiguration:
     number_of_shots: Optional[int] = None
     output_CSV_filename: Optional[str] = None
     command_for_gnuplot: Optional[str] = None
+
+class FullConfiguration:
+    def __init__(
+            self,
+            input_filename: str
+    ):
+        # TODO: open file, parse XML, set up configurations.
+        self.QFT_model_configuration = QftModelConfiguration()
+        self.spatial_lattice_configuration = SpatialLatticeConfiguration()
+        self.annealer_configuration = AnnealerConfiguration()

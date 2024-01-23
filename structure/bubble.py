@@ -1,10 +1,11 @@
 from typing import Dict, List
 from dimod import SampleSet
-from configuration.configuration import SpatialLatticeConfiguration
-from hamiltonian.hamiltonian import AnnealerHamiltonian
-from structure.point import ProfileAtPoint
+
+from basis.field import FieldCollectionAtPoint
+import basis.variable
+from dynamics.hamiltonian import AnnealerHamiltonian
+from input.configuration import SpatialLatticeConfiguration
 import minimization.sampling
-import minimization.variable
 from minimization.weight import WeightAccumulator
 from structure.domain_wall import DomainWallWeighter
 
@@ -30,7 +31,7 @@ class BubbleProfile:
         self.annealer_Hamiltonian = annealer_Hamiltonian
         self.domain_wall_weighter = domain_wall_weighter
         self.spatial_lattice_configuration = spatial_lattice_configuration
-        spatial_name_function = minimization.variable.name_for_index(
+        spatial_name_function = basis.variable.name_for_index(
             "r",
             spatial_lattice_configuration.number_of_spatial_steps
         )
@@ -38,8 +39,8 @@ class BubbleProfile:
         self.first_field = annealer_Hamiltonian.get_first_field_definition()
         self.second_field = annealer_Hamiltonian.get_second_field_definition()
 
-        def create_profile_at_point(spatial_index: int) -> ProfileAtPoint:
-            return ProfileAtPoint(
+        def create_at_point(spatial_index: int) -> FieldCollectionAtPoint:
+            return FieldCollectionAtPoint(
                 spatial_point_identifier=spatial_name_function(spatial_index),
                 spatial_radius_in_inverse_GeV=(
                     spatial_index
@@ -53,7 +54,7 @@ class BubbleProfile:
             spatial_lattice_configuration.number_of_spatial_steps + 1
         )
         self.fields_at_points = [
-            create_profile_at_point(spatial_index=i)
+            create_at_point(spatial_index=i)
             for i in range(self.number_of_point_profiles)
         ]
         maximum_variable_weight = self._get_maximum_variable_weight()

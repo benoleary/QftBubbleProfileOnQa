@@ -1,8 +1,15 @@
 import pytest
-from configuration.configuration import DiscreteConfiguration, FieldDefinition
-from structure.bubble import BubbleProfile
+
+from basis.field import FieldCollectionAtPoint
+import basis.variable
+from dynamics.hamiltonian import AnnealerHamiltonian
+from input.configuration import SpatialLatticeConfiguration
+import minimization.sampling
+from minimization.weight import WeightAccumulator
+from structure.domain_wall import DomainWallWeighter
 
 
+# TODO: fix this
 class TestBubbleProfile():
     def test_spatial_identifiers_have_same_length(self):
         test_configuration = DiscreteConfiguration(
