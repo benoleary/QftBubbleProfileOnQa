@@ -127,7 +127,7 @@ class TestSpinDomainWallWeighter():
         ), "incorrect weights for binary variables"
 
     @pytest.mark.parametrize(
-            "number_of_down_spins, expected_bitstring",
+            "number_of_ones, expected_bitstring",
             [
                 (1, "100000"),
                 (2, "110000"),
@@ -141,8 +141,8 @@ class TestSpinDomainWallWeighter():
                 (-4, "110000"),
                 (-5, "100000")
             ]
-        )
-    def test_fixing_value(self, number_of_down_spins, expected_bitstring):
+    )
+    def test_fixing_value(self, number_of_ones, expected_bitstring):
         test_field = FieldAtPoint(
             field_definition=FieldDefinition(
                 field_name="t",
@@ -164,36 +164,32 @@ class TestSpinDomainWallWeighter():
         spin_biases = SpinDomainWallWeighter().weights_for_fixed_value(
             field_at_point=test_field,
             fixing_weight=fixing_weight,
-            number_of_down_spins=number_of_down_spins
+            number_of_ones=number_of_ones
         )
 
         expected_linear_weights = {
             "t_x_0": fixing_weight,
             "t_x_1": (
                 fixing_weight if (
-                    number_of_down_spins >= 2
-                    or 0 > number_of_down_spins >= -4
+                    (number_of_ones >= 2) or (0 > number_of_ones >= -4)
                 )
                 else -fixing_weight
             ),
             "t_x_2": (
                 fixing_weight if (
-                    number_of_down_spins >= 3
-                    or 0 > number_of_down_spins >= -3
+                    (number_of_ones >= 3) or (0 > number_of_ones >= -3)
                 )
                 else -fixing_weight
             ),
             "t_x_3": (
                 fixing_weight if (
-                    number_of_down_spins >= 4
-                    or 0 > number_of_down_spins >= -2
+                    (number_of_ones >= 4) or (0 > number_of_ones >= -2)
                 )
                 else -fixing_weight
             ),
             "t_x_4": (
                 fixing_weight if (
-                    number_of_down_spins >= 5
-                    or number_of_down_spins == -1
+                    (number_of_ones >= 5) or (number_of_ones == -1)
                 )
                 else -fixing_weight
             ),
