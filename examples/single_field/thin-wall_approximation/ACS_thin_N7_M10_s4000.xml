@@ -1,19 +1,27 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
-    <sampler_name>dwave</sampler_name>
-    <variable_type>spin</variable_type>
-    <output_CSV_filename>ACS_N7_M10_s4000_r2_thin_wall_cloud.csv</output_CSV_filename>
-    <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
-    <number_of_spatial_steps>10</number_of_spatial_steps>
-    <first_field>
-        <field_name>f</field_name>
-        <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
-        <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
-        <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
-        <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
-    </first_field>
-    <spatial_step_in_inverse_GeV>2.0</spatial_step_in_inverse_GeV>
-    <volume_exponent>0</volume_exponent>
-    <potential_in_quartic_GeV_per_field_step>-0.02;0.012844648063306954;0.06901291128696377;0.10852144939608496;0.11137859225322781;0.07758433985839235;0.027130362349021254;0.0</potential_in_quartic_GeV_per_field_step>
-    <number_of_shots>4000</number_of_shots>
+    <annealer>
+        <sampler_name>dwave</sampler_name>
+        <variable_type>spin</variable_type>
+        <number_of_shots>4000</number_of_shots>
+    </annealer>
+    <output>
+        <output_CSV_filename>ACS_thin_wall_N7_M10_s4000_r2_cloud.csv</output_CSV_filename>
+        <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
+    </output>
+    <space>
+        <number_of_spatial_steps>10</number_of_spatial_steps>
+        <spatial_step_in_inverse_GeV>2.0</spatial_step_in_inverse_GeV>
+        <volume_exponent>0</volume_exponent>
+    </space>
+    <qft>
+        <first_field>
+            <field_name>f</field_name>
+            <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
+        </first_field>
+        <potential_in_quartic_GeV_per_field_step>-0.02;0.012844648063306954;0.06901291128696377;0.10852144939608496;0.11137859225322781;0.07758433985839235;0.027130362349021254;0.0</potential_in_quartic_GeV_per_field_step>
+    </qft>
 </configuration>

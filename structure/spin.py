@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from basis.field import FieldAtPoint, FieldCollectionAtPoint
 from minimization.weight import WeightAccumulator, WeightTemplate
 
+
 class SpinDomainWallWeighter:
     """
     This class implements the methods of the DomainWallWeighter Protocol,

@@ -1,18 +1,26 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
-    <sampler_name>kerberos</sampler_name>
-    <variable_type>spin</variable_type>
-    <output_CSV_filename>ACS_N50_M50_thin_wall_cloud.csv</output_CSV_filename>
-    <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
-    <number_of_spatial_steps>50</number_of_spatial_steps>
-    <volume_exponent>0</volume_exponent>
-    <first_field>
-        <field_name>f</field_name>
-        <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
-        <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
-        <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
-        <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
-    </first_field>
-    <spatial_step_in_inverse_GeV>0.5</spatial_step_in_inverse_GeV>
-    <potential_in_quartic_GeV_per_field_step>-0.01;-0.009031679999999999;-0.006650880000000001;-0.0030380799999999994;0.0016339200000000074;0.007199999999999988;0.013502719999999998;0.020392320000000002;0.02772672000000001;0.035371520000000004;0.0432;0.05109311999999998;0.05893952;0.06663552;0.07408512;0.0812;0.08789952000000001;0.09411072000000002;0.09976832;0.10481472;0.10919999999999999;0.11288191999999998;0.11582592;0.11800512;0.11940031999999999;0.12;0.11980031999999999;0.11880512000000001;0.11702591999999998;0.11448192000000001;0.1112;0.10721472;0.10256831999999999;0.09731071999999999;0.09149952;0.08520000000000001;0.07848512;0.07143552;0.06413952;0.05669311999999998;0.04919999999999998;0.04177152000000002;0.03452672000000001;0.027592320000000004;0.02110272;0.01519999999999999;0.010033919999999991;0.005761920000000007;0.0025491200000000067;0.0005683200000000003;0.0</potential_in_quartic_GeV_per_field_step>
+    <annealer>
+        <sampler_name>kerberos</sampler_name>
+        <variable_type>spin</variable_type>
+    </annealer>
+    <output>
+        <output_CSV_filename>ACS_thin_wall_N50_M50_cloud.csv</output_CSV_filename>
+        <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
+    </output>
+    <space>
+        <number_of_spatial_steps>50</number_of_spatial_steps>
+        <spatial_step_in_inverse_GeV>0.5</spatial_step_in_inverse_GeV>
+        <volume_exponent>0</volume_exponent>
+    </space>
+    <qft>
+        <first_field>
+            <field_name>f</field_name>
+            <lower_bound_in_GeV>-1.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>1.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>-1.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>1.0</false_vacuum_value_in_GeV>
+        </first_field>
+        <potential_in_quartic_GeV_per_field_step>-0.01;-0.009031679999999999;-0.006650880000000001;-0.0030380799999999994;0.0016339200000000074;0.007199999999999988;0.013502719999999998;0.020392320000000002;0.02772672000000001;0.035371520000000004;0.0432;0.05109311999999998;0.05893952;0.06663552;0.07408512;0.0812;0.08789952000000001;0.09411072000000002;0.09976832;0.10481472;0.10919999999999999;0.11288191999999998;0.11582592;0.11800512;0.11940031999999999;0.12;0.11980031999999999;0.11880512000000001;0.11702591999999998;0.11448192000000001;0.1112;0.10721472;0.10256831999999999;0.09731071999999999;0.09149952;0.08520000000000001;0.07848512;0.07143552;0.06413952;0.05669311999999998;0.04919999999999998;0.04177152000000002;0.03452672000000001;0.027592320000000004;0.02110272;0.01519999999999999;0.010033919999999991;0.005761920000000007;0.0025491200000000067;0.0005683200000000003;0.0</potential_in_quartic_GeV_per_field_step>
+    </qft>
 </configuration>

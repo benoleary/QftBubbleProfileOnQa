@@ -1,19 +1,27 @@
 <?xml version='1.0' encoding='utf8'?>
 <configuration>
-    <sampler_name>default</sampler_name>
-    <variable_type>spin</variable_type>
-    <output_CSV_filename>SM_Higgs_r10_f5_s4000_wider_bounds_local.csv</output_CSV_filename>
-    <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
-    <number_of_spatial_steps>10</number_of_spatial_steps>
-    <volume_exponent>0</volume_exponent>
-    <first_field>
-        <field_name>f</field_name>
-        <lower_bound_in_GeV>-369.0</lower_bound_in_GeV>
-        <upper_bound_in_GeV>369.0</upper_bound_in_GeV>
-        <true_vacuum_value_in_GeV>-246.0</true_vacuum_value_in_GeV>
-        <false_vacuum_value_in_GeV>246.0</false_vacuum_value_in_GeV>
-    </first_field>
-    <spatial_step_in_inverse_GeV>0.0020325203252032522</spatial_step_in_inverse_GeV>
-    <potential_in_quartic_GeV_per_field_step>-54074355.46875;-122923125.0;-54074355.46875;0.0;-49346542.96875;-113467500.0;-49346542.96875</potential_in_quartic_GeV_per_field_step>
-    <number_of_shots>4000</number_of_shots>
+    <annealer>
+        <sampler_name>default</sampler_name>
+        <variable_type>spin</variable_type>
+        <number_of_shots>4000</number_of_shots>
+    </annealer>
+    <output>
+        <output_CSV_filename>SM_Higgs_r10_f5_s4000_wider_bounds_local.csv</output_CSV_filename>
+        <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
+    </output>
+    <space>
+        <number_of_spatial_steps>10</number_of_spatial_steps>
+        <spatial_step_in_inverse_GeV>0.0020325203252032522</spatial_step_in_inverse_GeV>
+        <volume_exponent>0</volume_exponent>
+    </space>
+    <qft>
+        <first_field>
+            <field_name>f</field_name>
+            <lower_bound_in_GeV>-369.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>369.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>-246.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>246.0</false_vacuum_value_in_GeV>
+        </first_field>
+        <potential_in_quartic_GeV_per_field_step>-54074355.46875;-122923125.0;-54074355.46875;0.0;-49346542.96875;-113467500.0;-49346542.96875</potential_in_quartic_GeV_per_field_step>
+    </qft>
 </configuration>

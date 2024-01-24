@@ -10,6 +10,7 @@ from structure.spin import SpinDomainWallWeighter
 # TODO: bit version
 _spin_weighter = SpinDomainWallWeighter()
 
+
 class TestDomainWallWeighters():
     @pytest.mark.parametrize(
             "domain_wall_weighter",
