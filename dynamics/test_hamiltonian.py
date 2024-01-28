@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Callable, Tuple
 import pytest
 
 from basis.field import FieldCollectionAtPoint, FieldDefinition
@@ -6,7 +6,7 @@ import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
 from dynamics.spin import SpinHamiltonian
 from input.configuration import QftModelConfiguration
-from minimization.sampling import SamplerHandler, SamplePovider
+from minimization.sampling import SamplerHandler, SampleProvider
 from minimization.spin import SpinSamplerHandler
 from structure.domain_wall import DomainWallWeighter
 from structure.spin import SpinDomainWallWeighter
@@ -17,25 +17,31 @@ from structure.spin import SpinDomainWallWeighter
 _lower_bound = -10.75
 _field_step_in_GeV = 7.0
 _radius_step_in_inverse_GeV = 0.25
-_number_of_field_values = 5
-# We want the field to be
+
+
+# We want the field to be, for example for 5 values:
 # |100000> => _lower_bound,
 # |110000> => _lower_bound + _field_step_in_GeV, and
 # |111000> => _lower_bound + (2 * _field_step_in_GeV),
 # ...
 # so the upper bound is
 # (_lower_bound + ((_number_of_field_values - 1) * _field_step_in_GeV)).
-_upper_bound = (
-    _lower_bound + (_number_of_field_values * _field_step_in_GeV)
-)
-_field_definition = FieldDefinition(
-    field_name="T",
-    number_of_values=3,
-    lower_bound_in_GeV=_lower_bound,
-    upper_bound_in_GeV=_upper_bound,
-    true_vacuum_value_in_GeV=_lower_bound,
-    false_vacuum_value_in_GeV=_upper_bound
-)
+def _get_test_field_definition(number_of_field_values: int) -> FieldDefinition:
+    upper_bound = (
+        _lower_bound + ((number_of_field_values - 1) * _field_step_in_GeV)
+    )
+    return FieldDefinition(
+        field_name="T",
+        number_of_values=number_of_field_values,
+        lower_bound_in_GeV=_lower_bound,
+        upper_bound_in_GeV=upper_bound,
+        true_vacuum_value_in_GeV=_lower_bound,
+        false_vacuum_value_in_GeV=upper_bound
+    )
+
+
+def _zero_potential(field_value: int):
+    return 0.0
 
 
 # The linear term should not matter.
@@ -43,39 +49,33 @@ def _linear_potential(field_value: int):
     return (2.0 * field_value) + 20.0
 
 
-_discretized_linear_potential = [
-    [_linear_potential(f) for f in range(_number_of_field_values)]
-]
-
-_linear_potential_configuration = QftModelConfiguration(
-    first_field=_field_definition,
-    potential_in_quartic_GeV_per_field_step=_discretized_linear_potential
-)
-
-# TODO: bit version
-_spin_linear_potential = SpinHamiltonian(
-    _linear_potential_configuration
-)
-
-
 # As ever, the linear term is irrelevant.
 def _quadratic_potential(field_value: int):
     return (2.5 * (field_value - 5) * (field_value - 5)) + 10.0
 
 
-_discretized_quadratic_potential = [
-    [_quadratic_potential(f) for f in range(_number_of_field_values)]
-]
+def _get_potential_configuration(
+        *,
+        field_definition: FieldDefinition,
+        potential_function: Callable[[int], float]
+) -> QftModelConfiguration:
+    return QftModelConfiguration(
+        first_field=field_definition,
+        potential_in_quartic_GeV_per_field_step=[
+            [
+                potential_function(f)
+                for f in range(field_definition.number_of_values)
+            ]
+        ]
+    )
 
-_quadratic_potential_configuration = QftModelConfiguration(
-    first_field=_field_definition,
-    potential_in_quartic_GeV_per_field_step=_discretized_quadratic_potential
-)
 
 # TODO: bit version
-_spin_quadratic_potential = SpinHamiltonian(
-    _quadratic_potential_configuration
-)
+def _get_spin_potential(
+        model_configuration: QftModelConfiguration
+) -> AnnealerHamiltonian:
+    return SpinHamiltonian(model_configuration)
+
 
 # TODO: bit versions
 _spin_domain_wall_weighter = SpinDomainWallWeighter()
@@ -85,12 +85,12 @@ _spin_sampler_handler = SpinSamplerHandler()
 # TODO: tests with second field
 class TestAnnealerHamiltonians():
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
+            "get_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
                     # The potential does not matter for the test of the kinetic
                     # term, so we just use the simpler case.
-                    _spin_linear_potential,
+                    _get_spin_potential,
                     _spin_domain_wall_weighter,
                     _spin_sampler_handler
                 )
@@ -98,7 +98,8 @@ class TestAnnealerHamiltonians():
     )
     def test_all_valid_bitstrings_present_with_correct_energies(
         self,
-        annealer_Hamiltonian: AnnealerHamiltonian,
+        *,
+        get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
         domain_wall_weighter: DomainWallWeighter,
         sampler_handler: SamplerHandler
     ):
@@ -107,6 +108,16 @@ class TestAnnealerHamiltonians():
         valid pair of ICDW configurations of a field at neighboring radius
         values.
         """
+        # We want the field to take values 0, 1, 2, and 3, leading to a maximum
+        # difference of 3.
+        number_of_field_values = 4
+        field_definition = _get_test_field_definition(number_of_field_values)
+        potential_configuration = _get_potential_configuration(
+            field_definition=field_definition,
+            potential_function=_zero_potential
+        )
+        annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
+
         domain_end_fixing_weight, domain_wall_alignment_weight = (
             self._get_end_and_alignment_weights(annealer_Hamiltonian)
         )
@@ -115,7 +126,7 @@ class TestAnnealerHamiltonians():
             FieldCollectionAtPoint(
                 spatial_point_identifier=f"r{i}",
                 spatial_radius_in_inverse_GeV=_radius_step_in_inverse_GeV,
-                first_field=_field_definition
+                first_field=field_definition
             ) for i in range(2)
         ]
 
@@ -131,12 +142,12 @@ class TestAnnealerHamiltonians():
             annealer_Hamiltonian.kinetic_weights(
                 radius_step_in_inverse_GeV=_radius_step_in_inverse_GeV,
                 nearer_center=lower_radius_field,
-                nearer_edger=upper_radius_field,
+                nearer_edge=upper_radius_field,
                 scaling_factor=1.0
             )
         )
 
-        sample_provider = SamplePovider(
+        sample_provider = SampleProvider(
             sampler_name="exact",
             sampler_handler=sampler_handler
         )
@@ -166,6 +177,7 @@ class TestAnnealerHamiltonians():
         assert (
             zero_zero_bitstring in actual_bitstrings_to_energies.keys()
         ), f"expected {zero_zero_bitstring} to be a valid state"
+
         base_energy = actual_bitstrings_to_energies[zero_zero_bitstring]
         field_step_squared = _field_step_in_GeV * _field_step_in_GeV
         radius_step_squared = (
@@ -176,6 +188,7 @@ class TestAnnealerHamiltonians():
         )
         extra_for_difference_of_two = extra_for_difference_of_one * 4.0
         extra_for_difference_of_three = extra_for_difference_of_one * 9.0
+
         expected_bitstrings_to_energies = {
             zero_zero_bitstring: base_energy,
             "1000011000": base_energy + extra_for_difference_of_one,
@@ -205,24 +218,24 @@ class TestAnnealerHamiltonians():
         assert (
             pytest.approx(expected_bitstrings_to_energies["1000011000"])
             == actual_bitstrings_to_energies["1000011000"]
-        ), "expected base energy plus 0.5 * 1^2 * step^2 for (0, 1)"
+        ), "expected base energy plus 0.5 * 1^2 * step^-2 for (0, 1)"
         assert (
             pytest.approx(expected_bitstrings_to_energies["1000011100"])
             == actual_bitstrings_to_energies["1000011100"]
-        ), "expected base energy plus 0.5 * 2^2 * step^2 for (0, 2)"
+        ), "expected base energy plus 0.5 * 2^2 * step^-2 for (0, 2)"
         assert (
             pytest.approx(expected_bitstrings_to_energies["1000011110"])
             == actual_bitstrings_to_energies["1000011110"]
-        ), "expected base energy plus 0.5 * 3^2 * step^2 for (0, 3)"
+        ), "expected base energy plus 0.5 * 3^2 * step^-2 for (0, 3)"
         assert (
             expected_bitstrings_to_energies == actual_bitstrings_to_energies
         ), "expected correct differences for all valid bitstrings"
 
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
+            "get_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
-                    _spin_linear_potential,
+                    _get_spin_potential,
                     _spin_domain_wall_weighter,
                     _spin_sampler_handler
                 )
@@ -230,15 +243,26 @@ class TestAnnealerHamiltonians():
     )
     def test_linear_potential_minimized_correctly(
         self,
-        annealer_Hamiltonian: AnnealerHamiltonian,
+        *,
+        get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
         domain_wall_weighter: DomainWallWeighter,
         sampler_handler: SamplerHandler
     ):
+        # We want a minimum at 10000000, hence 7 values.
+        number_of_field_values = 7
+        field_definition = _get_test_field_definition(number_of_field_values)
+        potential_configuration = _get_potential_configuration(
+            field_definition=field_definition,
+            potential_function=_linear_potential
+        )
+        annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
+
         bitstrings_to_energies = (
             self._get_bitstrings_to_energies_for_potential_at_single_point(
                 annealer_Hamiltonian=annealer_Hamiltonian,
                 domain_wall_weighter=domain_wall_weighter,
-                sampler_handler=sampler_handler
+                sampler_handler=sampler_handler,
+                field_definition=field_definition
             )
         )
 
@@ -249,10 +273,10 @@ class TestAnnealerHamiltonians():
         ), "expected domain wall completely to the left"
 
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
+            "get_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
-                    _spin_quadratic_potential,
+                    _get_spin_potential,
                     _spin_domain_wall_weighter,
                     _spin_sampler_handler
                 )
@@ -260,15 +284,26 @@ class TestAnnealerHamiltonians():
     )
     def test_quadratic_potential_minimized_correctly(
         self,
-        annealer_Hamiltonian: AnnealerHamiltonian,
+        *,
+        get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
         domain_wall_weighter: DomainWallWeighter,
         sampler_handler: SamplerHandler
     ):
+        # We want a minimum at 11111100, hence 7 values.
+        number_of_field_values = 7
+        field_definition = _get_test_field_definition(number_of_field_values)
+        potential_configuration = _get_potential_configuration(
+            field_definition=field_definition,
+            potential_function=_quadratic_potential
+        )
+        annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
+
         bitstrings_to_energies = (
             self._get_bitstrings_to_energies_for_potential_at_single_point(
                 annealer_Hamiltonian=annealer_Hamiltonian,
                 domain_wall_weighter=domain_wall_weighter,
-                sampler_handler=sampler_handler
+                sampler_handler=sampler_handler,
+                field_definition=field_definition
             )
         )
 
@@ -294,9 +329,11 @@ class TestAnnealerHamiltonians():
 
     def _get_bitstrings_to_energies_for_potential_at_single_point(
             self,
+            *,
             annealer_Hamiltonian: AnnealerHamiltonian,
             domain_wall_weighter: DomainWallWeighter,
-            sampler_handler: SamplerHandler
+            sampler_handler: SamplerHandler,
+            field_definition: FieldDefinition
     ):
         domain_end_fixing_weight, domain_wall_alignment_weight = (
             self._get_end_and_alignment_weights(annealer_Hamiltonian)
@@ -307,7 +344,7 @@ class TestAnnealerHamiltonians():
             FieldCollectionAtPoint(
                 spatial_point_identifier="r",
                 spatial_radius_in_inverse_GeV=_radius_step_in_inverse_GeV,
-                first_field=_field_definition
+                first_field=field_definition
             )
         ]
 
@@ -325,16 +362,28 @@ class TestAnnealerHamiltonians():
             )
         )
 
-        sample_provider = SamplePovider(
+        sample_provider = SampleProvider(
             sampler_name="exact",
             sampler_handler=sampler_handler
         )
 
         sampling_result = sample_provider.get_sample(calculated_weights)
 
-        lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-
-        return basis.variable.bitstrings_to_energies(
+        # The ExactSolver does not seem to respect the atol argument very well,
+        # so we take everything it gives and then sort out the lowest single
+        # state, within an absolute tolerance of 1.0 units of energy.
+        lowest_bitstrings_to_energies = basis.variable.bitstrings_to_energies(
             binary_variable_names=single_field.binary_variable_names,
-            sample_set=lowest_energy
+            sample_set=sampling_result.lowest(rtol=0.01, atol=0.1)
         )
+
+        lowest_energy = None
+        for v in lowest_bitstrings_to_energies.values():
+            if lowest_energy is None or v < lowest_energy:
+                lowest_energy = v
+
+        return {
+            k: v
+            for k, v in lowest_bitstrings_to_energies.items()
+            if abs(v - lowest_energy) < 1.0
+        }

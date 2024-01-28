@@ -93,7 +93,11 @@ class BubbleProfile:
             alignment_weight=alignment_weight
         )
         calculated_weights.add(self._get_potential_weights())
-        calculated_weights.add(self._get_kinetic_weights())
+        calculated_weights.add(
+            self._get_kinetic_weights(
+                self.spatial_lattice_configuration.spatial_step_in_inverse_GeV
+            )
+        )
         return calculated_weights
 
     def _get_structure_weights(
@@ -186,7 +190,7 @@ class BubbleProfile:
                 self.annealer_Hamiltonian.kinetic_weights(
                     radius_step_in_inverse_GeV=spatial_step,
                     nearer_center=previous_profile.first_field,
-                    nearer_edger=profile_at_point.first_field,
+                    nearer_edge=profile_at_point.first_field,
                     scaling_factor=volume_factor
                 )
             )
@@ -195,7 +199,7 @@ class BubbleProfile:
                     self.annealer_Hamiltonian.kinetic_weights(
                         radius_step_in_inverse_GeV=spatial_step,
                         nearer_center=previous_profile.second_field,
-                        nearer_edger=profile_at_point.second_field,
+                        nearer_edge=profile_at_point.second_field,
                         scaling_factor=volume_factor
                     )
                 )

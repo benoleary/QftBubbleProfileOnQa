@@ -199,10 +199,10 @@ class TestSpinHamiltonian():
         # to a |1> brings (with a factor of -0.5 because the spin flip itself
         # brings a factor of (-1)-(+1) = -2).
         expected_linear_weights = {
-            "T_r0_1": -1.25,
-            "T_r0_2": -1.25,
-            "T_r0_3": -1.25,
-            "T_r0_4": -1.25,
+            "T_r_1": -1.25,
+            "T_r_2": -1.25,
+            "T_r_3": -1.25,
+            "T_r_4": -1.25,
         }
         assert expected_linear_weights.keys() == actual_linear_weights.keys()
 

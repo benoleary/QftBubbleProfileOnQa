@@ -1,29 +1,32 @@
 import pytest
 
-from basis.field import FieldAtPoint, FieldDefinition
+from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
 from structure.spin import SpinDomainWallWeighter
 
 
 class TestSpinDomainWallWeighter():
     def test_weights_for_domain_wall_given_correctly(self):
-        test_field = FieldAtPoint(
-            field_definition=FieldDefinition(
-                field_name="t",
-                number_of_values=3,
-                lower_bound_in_GeV=0.0,
-                upper_bound_in_GeV=1.0,
-                true_vacuum_value_in_GeV=0.0,
-                false_vacuum_value_in_GeV=1.0
-            ),
-            spatial_point_identifier="x"
+        test_field_definition = FieldDefinition(
+            field_name="t",
+            number_of_values=3,
+            lower_bound_in_GeV=0.0,
+            upper_bound_in_GeV=1.0,
+            true_vacuum_value_in_GeV=0.0,
+            false_vacuum_value_in_GeV=1.0
         )
         end_weight = 10.0
         alignment_weight = 3.5
 
         actual_weights = SpinDomainWallWeighter().weights_for_domain_walls(
-            field_at_point=test_field,
-            end_spin_weight=end_weight,
-            spin_alignment_weight=alignment_weight
+            profiles_at_points=[
+                FieldCollectionAtPoint(
+                    spatial_point_identifier="x",
+                    spatial_radius_in_inverse_GeV=1.0,
+                    first_field=test_field_definition
+                )
+            ],
+            end_weight=end_weight,
+            alignment_weight=alignment_weight
         )
 
         # All the spins are either |1> which multiplies its weight by -1 or |0>
@@ -79,7 +82,7 @@ class TestSpinDomainWallWeighter():
                 -5
             ]
     )
-    def test_fixing_value(self, number_of_ones):
+    def test_fixing_value(self, number_of_ones: int):
         test_field = FieldAtPoint(
             field_definition=FieldDefinition(
                 field_name="t",

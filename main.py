@@ -5,7 +5,7 @@ import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
 from dynamics.spin import SpinHamiltonian
 from input.configuration import AnnealerConfiguration, FullConfiguration
-from minimization.sampling import SamplePovider, SamplerHandler
+from minimization.sampling import SampleProvider, SamplerHandler
 from minimization.spin import SpinSamplerHandler
 from output.printing import CsvWriter
 from structure.bubble import BubbleProfile
@@ -61,7 +61,7 @@ def main():
     message_for_Leap = (
         f"QftBubbleProfileOnQa for input file {parsed_arguments.input_file}"
     ) if sampler_name == "dwave" else None
-    sample_provider = SamplePovider(
+    sample_provider = SampleProvider(
             sampler_name=sampler_name,
             sampler_handler=variable_type_dependence.sample_handler,
             message_for_Leap=message_for_Leap,

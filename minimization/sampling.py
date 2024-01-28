@@ -32,7 +32,7 @@ class SamplerHandler(Protocol):
         raise NotImplementedError("SamplerHandler is just a Protocol")
 
 
-class SamplePovider:
+class SampleProvider:
     """
     This class encapsulates both which dimod.Sampler is used and, through
     sampler_handler, how it is used.

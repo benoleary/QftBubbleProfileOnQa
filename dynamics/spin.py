@@ -20,12 +20,17 @@ class SpinHamiltonian(HasDiscretizedPotential):
             model_configuration.potential_in_quartic_GeV_per_field_step
         )
         self.model_configuration = model_configuration
-        self.first_field_positive_block = _constant_quadratics_block(
-            model_configuration.first_field
+
+        self.first_field_positive_block = (
+            _constant_quadratics_block_without_correlations_on_ends(
+                model_configuration.first_field
+            )
         )
         self.second_field_positive_block = (
             None if not model_configuration.second_field
-            else _constant_quadratics_block(model_configuration.second_field)
+            else _constant_quadratics_block_without_correlations_on_ends(
+                model_configuration.second_field
+            )
         )
         self.potential_weight_template = (
             _weights_for_single_field_potential_at_point(
@@ -70,6 +75,9 @@ class SpinHamiltonian(HasDiscretizedPotential):
             nearer_edge: FieldAtPoint,
             scaling_factor: float
     ) -> WeightAccumulator:
+        # We have to remember that this block ignores the fixed first |1> and
+        # last |0>, so the lists of variable names have to be sliced
+        # appropriately.
         positive_block = self._positive_block_template_for(
             nearer_center.field_definition
         )
@@ -77,12 +85,17 @@ class SpinHamiltonian(HasDiscretizedPotential):
             scaling_factor
             / (radius_step_in_inverse_GeV * radius_step_in_inverse_GeV)
         )
+
         # Nearer center with itself
         kinetic_weights = WeightAccumulator(
             quadratic_weights=(
                 positive_block.quadratics_for_variable_names(
-                    first_variable_names=nearer_center.binary_variable_names,
-                    second_variable_names=nearer_center.binary_variable_names,
+                    normal_variable_names=(
+                        nearer_center.binary_variable_names[1:-1]
+                    ),
+                    transpose_variable_names=(
+                        nearer_center.binary_variable_names[1:-1]
+                    ),
                     scaling_factor=scaling_including_spatial
                 )
             )
@@ -90,24 +103,30 @@ class SpinHamiltonian(HasDiscretizedPotential):
         # Nearer center with nearer edge
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_variable_names=nearer_center.binary_variable_names,
-                second_variable_names=nearer_edge.binary_variable_names,
+                normal_variable_names=nearer_center.binary_variable_names[1:-1],
+                transpose_variable_names=(
+                    nearer_edge.binary_variable_names[1:-1]
+                ),
                 scaling_factor=-scaling_including_spatial
             )
         )
         # Nearer edge with nearer center
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_variable_names=nearer_edge.binary_variable_names,
-                second_variable_names=nearer_center.binary_variable_names,
+                normal_variable_names=nearer_edge.binary_variable_names[1:-1],
+                transpose_variable_names=(
+                    nearer_center.binary_variable_names[1:-1]
+                ),
                 scaling_factor=-scaling_including_spatial
             )
         )
         # Nearer edge with itself
         kinetic_weights.add_quadratics(
             positive_block.quadratics_for_variable_names(
-                first_variable_names=nearer_edge.binary_variable_names,
-                second_variable_names=nearer_edge.binary_variable_names,
+                normal_variable_names=nearer_edge.binary_variable_names[1:-1],
+                transpose_variable_names=(
+                    nearer_edge.binary_variable_names[1:-1]
+                ),
                 scaling_factor=scaling_including_spatial
             )
         )
@@ -121,17 +140,15 @@ class SpinHamiltonian(HasDiscretizedPotential):
             scaling_factor: float
     ) -> WeightAccumulator:
         if not second_field:
-            return (
-                self.potential_weight_template.first_linears_for_variable_names(
-                    variable_names=first_field.binary_variable_names,
+            linear_weights = (
+                self.potential_weight_template.normal_linears_for_names(
+                    variable_names=first_field.binary_variable_names[1:-1],
                     scaling_factor=scaling_factor
                 )
             )
+            return WeightAccumulator(linear_weights=linear_weights)
         # TODO: do this properly
-        return WeightAccumulator(
-            linear_weights={},
-            quadratic_weights={}
-        )
+        return WeightAccumulator()
 
     def _get_maximum_kinetic_for_single_field(
             self,
@@ -193,14 +210,15 @@ def _weights_for_single_field_potential_at_point(
 
     # This is the case of a single FieldAtPoint with no quadratic weights.
     spin_weights = WeightTemplate(
-        first_number_of_values=len(next_values),
-        second_number_of_values=0
+        number_of_values_for_normal=len(next_values),
+        number_of_values_for_transpose=0
     )
 
     for i, next_value in enumerate(next_values):
-        spin_weights.first_linear_weights[i] = (
+        spin_weights.linear_weights_for_normal[i] = (
             0.5 * (previous_value - next_value)
         )
+        previous_value = next_value
 
     return spin_weights
 
@@ -220,18 +238,21 @@ def _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
     return (0.125 * field_step_in_GeV * field_step_in_GeV)
 
 
-def _constant_quadratics_block(
+def _constant_quadratics_block_without_correlations_on_ends(
         field_definition: FieldDefinition
 ) -> WeightTemplate:
-        number_of_values = field_definition.number_of_values
+        # In this case, we have correlations between N - 1 spins because the
+        # fixed first |1> and last |0> do not contribute to the square of the
+        # difference of values.
+        number_of_values = field_definition.number_of_values - 1
         kinetic_constant = (
             _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
                 field_definition.step_in_GeV
             )
         )
-        return  WeightTemplate(
-            first_number_of_values=0,
-            second_number_of_values=0,
+        return WeightTemplate(
+            number_of_values_for_normal=0,
+            number_of_values_for_transpose=0,
             initial_quadratics=[
                 [kinetic_constant for _ in range(number_of_values)]
                 for _ in range(number_of_values)

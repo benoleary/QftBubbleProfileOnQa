@@ -95,7 +95,10 @@ def _domain_wall_templates_for_first_and_second_fields(
 ) -> Tuple[WeightTemplate, Optional[WeightTemplate]]:
     first_field_template = _weights_for_domain_wall(
         number_of_spins=(
-            fields_at_point.first_field.field_definition.number_of_values
+            # For the purposes of weights for the Ising-chain domain wall model,
+            # there are N + 1 spins to represent N values, and we need to weight
+            # all N + 1 spins in this case.
+            fields_at_point.first_field.field_definition.number_of_values + 1
         ),
         end_weight=end_weight,
         alignment_weight=alignment_weight
@@ -104,7 +107,9 @@ def _domain_wall_templates_for_first_and_second_fields(
         None if not fields_at_point.second_field
         else _weights_for_domain_wall(
             number_of_spins=(
+                # As above, we need to weight N + 1 spins.
                 fields_at_point.second_field.field_definition.number_of_values
+                + 1
             ),
             end_weight=end_weight,
             alignment_weight=alignment_weight
@@ -132,8 +137,8 @@ def _weights_for_domain_wall(
     # This is the case of a FieldAtPoint having correlations between its own
     # variables.
     spin_weights = WeightTemplate(
-        first_number_of_values=number_of_spins,
-        second_number_of_values=number_of_spins
+        number_of_values_for_normal=number_of_spins,
+        number_of_values_for_transpose=number_of_spins
     )
 
     # First, we set the weights to fix the ends so that there is a domain of 1s
@@ -141,8 +146,8 @@ def _weights_for_domain_wall(
     # signs are this way because we want the first spin to be |1> which
     # multiplies its weight by -1 in the objective function, and the last spin
     # to be |0> which multiplies its weight by +1.
-    spin_weights.first_linear_weights[0] = end_weight
-    spin_weights.first_linear_weights[-1] = -end_weight
+    spin_weights.linear_weights_for_normal[0] = end_weight
+    spin_weights.linear_weights_for_normal[-1] = -end_weight
 
     # Next, each pair of nearest neighbors gets weighted to favor having the
     # same values - which is either (-1)^2 or (+1)^2, so +1, while opposite
@@ -163,11 +168,11 @@ def _domain_wall_weights_from_template(
     # In this case, the correlations are between the variables of the field with
     # other variables of the same field itself.
     return WeightAccumulator(
-        linear_weights=field_template.first_linears_for_variable_names(
-            field_at_point.binary_variable_names
+        linear_weights=field_template.normal_linears_for_names(
+            variable_names=field_at_point.binary_variable_names
         ),
         quadratic_weights=field_template.quadratics_for_variable_names(
-            first_field=field_at_point,
-            second_field=field_at_point
+            normal_variable_names=field_at_point.binary_variable_names,
+            transpose_variable_names=field_at_point.binary_variable_names
         )
     )

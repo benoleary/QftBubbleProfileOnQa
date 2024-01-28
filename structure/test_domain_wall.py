@@ -1,53 +1,60 @@
 import pytest
 
-from basis.field import FieldAtPoint, FieldDefinition
+from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
 import basis.variable
-import minimization.sampling
+from minimization.sampling import SampleProvider, SamplerHandler
+from minimization.spin import SpinSamplerHandler
 from structure.domain_wall import DomainWallWeighter
 from structure.spin import SpinDomainWallWeighter
 
 
-# TODO: bit version
+# TODO: bit versions
 _spin_weighter = SpinDomainWallWeighter()
+_spin_sampler_handler = SpinSamplerHandler()
 
 
 class TestDomainWallWeighters():
     @pytest.mark.parametrize(
-            "domain_wall_weighter",
-            [_spin_weighter]
+            "domain_wall_weighter, sampler_handler",
+            [(_spin_weighter, _spin_sampler_handler)]
     )
     def test_all_valid_strengths_for_only_domain_wall_conditions(
         self,
-        domain_wall_weighter: DomainWallWeighter
+        domain_wall_weighter: DomainWallWeighter,
+        sampler_handler: SamplerHandler
     ):
-        # TODO: fix this
-        test_field = FieldAtPoint(
-            field_definition=FieldDefinition(
-                field_name="t",
-                number_of_values=7,
-                lower_bound_in_GeV=0.0,
-                upper_bound_in_GeV=1.0,
-                true_vacuum_value_in_GeV=0.0,
-                false_vacuum_value_in_GeV=1.0
-            ),
-            spatial_point_identifier="x0"
+        test_field_definition = FieldDefinition(
+            field_name="t",
+            number_of_values=7,
+            lower_bound_in_GeV=0.0,
+            upper_bound_in_GeV=1.0,
+            true_vacuum_value_in_GeV=0.0,
+            false_vacuum_value_in_GeV=1.0
         )
+        test_fields_at_point = FieldCollectionAtPoint(
+                    spatial_point_identifier="x",
+                    spatial_radius_in_inverse_GeV=1.0,
+                    first_field=test_field_definition
+                )
         end_weight = 10.0
         alignment_weight = 3.5
-        spin_biases = domain_wall_weighter.weights_for_domain_walls(
-            field_at_point=test_field,
-            end_spin_weight=end_weight,
-            spin_alignment_weight=alignment_weight
+        annealing_weights = domain_wall_weighter.weights_for_domain_walls(
+            profiles_at_points=[test_fields_at_point],
+            end_weight=end_weight,
+            alignment_weight=alignment_weight
         )
 
-        sampling_result = minimization.sampling.get_sample(
-            spin_biases=spin_biases,
-            sampler_name="exact"
+        test_sample_provider = SampleProvider(
+            sampler_name="exact",
+            sampler_handler=sampler_handler
         )
+        sampling_result = test_sample_provider.get_sample(annealing_weights)
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (
             basis.variable.bitstrings_to_energies(
-                binary_variable_names=test_field.binary_variable_names,
+                binary_variable_names=(
+                    test_fields_at_point.first_field.binary_variable_names
+                ),
                 sample_set=lowest_energy
             )
         )
@@ -81,8 +88,8 @@ class TestDomainWallWeighters():
         ), "incorrect energies for found states"
 
     @pytest.mark.parametrize(
-            "domain_wall_weighter",
-            [_spin_weighter]
+            "domain_wall_weighter, sampler_handler",
+            [(_spin_weighter, _spin_sampler_handler)]
     )
     @pytest.mark.parametrize(
             "number_of_ones, expected_bitstring",
@@ -102,9 +109,10 @@ class TestDomainWallWeighters():
     )
     def test_fixing_value(
         self,
-        domain_wall_weighter,
-        number_of_ones,
-        expected_bitstring
+        domain_wall_weighter: DomainWallWeighter,
+        sampler_handler: SamplerHandler,
+        number_of_ones: int,
+        expected_bitstring: str
     ):
         test_field = FieldAtPoint(
             field_definition=FieldDefinition(
@@ -119,16 +127,17 @@ class TestDomainWallWeighters():
         )
         fixing_weight = 11.0
 
-        spin_biases = domain_wall_weighter.weights_for_fixed_value(
+        annealing_weights = domain_wall_weighter.weights_for_fixed_value(
             field_at_point=test_field,
             fixing_weight=fixing_weight,
             number_of_ones=number_of_ones
         )
 
-        sampling_result = minimization.sampling.get_sample(
-            spin_biases=spin_biases,
-            sampler_name="exact"
+        test_sample_provider = SampleProvider(
+            sampler_name="exact",
+            sampler_handler=sampler_handler
         )
+        sampling_result = test_sample_provider.get_sample(annealing_weights)
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (
             basis.variable.bitstrings_to_energies(
