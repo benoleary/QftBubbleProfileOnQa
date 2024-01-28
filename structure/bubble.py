@@ -99,25 +99,6 @@ class BubbleProfile:
             ]
         )
 
-    def _row_for_CSV(
-            self,
-            *,
-            row_index: int,
-            sample_set: SampleSet
-    ) -> str:
-        # TODO: enhance for second field
-        radius_in_inverse_GeV = (
-            row_index
-            * self.spatial_lattice_configuration.spatial_step_in_inverse_GeV
-        )
-        first_field_strength = (
-            self.fields_at_points[row_index].first_field.in_GeV(sample_set)
-        )
-        return (
-            f"{radius_in_inverse_GeV} {_separation_character}"
-            f" {first_field_strength}"
-        )
-
     def _get_volume_factor(self, radius_value: float) -> float:
         return radius_value**(
             self.spatial_lattice_configuration.volume_exponent

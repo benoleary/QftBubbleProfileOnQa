@@ -1,32 +1,59 @@
 import dwave.inspector
+
+from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
+from structure.spin import SpinDomainWallWeighter
+
 import minimization.sampling
 import basis.variable
 from input.configuration import DiscreteConfiguration, FieldDefinition
 from structure.bubble import BubbleProfile
-from basis.field import FieldAtPoint, FieldDefinition
 import dynamics.potential
 
 
 def inspect_single_chain_for_single_field(sampler_name: str):
-    test_field = FieldAtPoint(
-        field_definition=FieldDefinition(
-            field_name="t",
-            number_of_values=7,
-            lower_bound_in_GeV=0.0,
-            upper_bound_in_GeV=6.0,
-            true_vacuum_value_in_GeV=0.0,
-            false_vacuum_value_in_GeV=6.0
-        ),
+    test_field_definition = FieldDefinition(
+        field_name="t",
+        number_of_values=7,
+        lower_bound_in_GeV=0.0,
+        upper_bound_in_GeV=6.0,
+        true_vacuum_value_in_GeV=0.0,
+        false_vacuum_value_in_GeV=6.0
+    )
+    test_field_at_point = FieldAtPoint(
+        field_definition=test_field_definition,
         spatial_point_identifier="x0"
     )
     end_weight = 10.0
     alignment_weight = 3.5
-    spin_biases = test_field.weights_for_domain_wall(
-            end_spin_weight=end_weight,
-            spin_alignment_weight=alignment_weight
+    test_domain_wall_weighter = SpinDomainWallWeighter()
+    test_weights = (
+        test_domain_wall_weighter.weights_for_fixed_value(
+            field_at_point=test_field_at_point,
+            fixing_weight=end_weight,
+            number_of_ones=(
+                1 + test_field_definition.true_vacuum_value_in_steps
+            )
         )
+    )
+    test_weights.add(
+        test_domain_wall_weighter.weights_for_fixed_value(
+            field_at_point=test_field_at_point,
+            fixing_weight=end_weight,
+            number_of_ones=(
+                1 + test_field_definition.false_vacuum_value_in_steps
+            )
+        )
+    )
+    test_weights.add(
+        test_domain_wall_weighter.weights_for_domain_walls(
+            profiles_at_points=[FieldCollectionAtPoint(test_field_at_point)],
+            end_weight=end_weight,
+            alignment_weight=alignment_weight
+        )
+    )
+
     sampling_result = minimization.sampling.get_sample(
-        spin_biases=spin_biases,
+        spin_biases=test_weights,
         message_for_Leap="Just a field as a single chain",
         number_of_shots=100,
         sampler_name=sampler_name

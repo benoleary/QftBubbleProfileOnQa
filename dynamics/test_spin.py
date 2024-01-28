@@ -67,24 +67,24 @@ class TestSpinHamiltonian():
         # All the weights should be exactly representable in binary so we can
         # make floating-point number comparisons without needing a tolerance.
         assert (
-            {} == actual_weights.linear_biases
-        ), "incorrect weights for linear biases"
+            {} == actual_weights.linear_weights
+        ), "incorrect linear weights"
         assert (
             len(expected_quadratic_weights.keys())
-            == len(actual_weights.quadratic_biases.keys())
-        ), "incorrect number of keys for quadratic biases"
+            == len(actual_weights.quadratic_weights.keys())
+        ), "incorrect number of keys for quadratic weights"
         assert (
             expected_quadratic_weights.keys()
-            == actual_weights.quadratic_biases.keys()
-        ), "incorrect keys for quadratic biases"
+            == actual_weights.quadratic_weights.keys()
+        ), "incorrect keys for quadratic weights"
         assert (
-            expected_quadratic_weights == actual_weights.quadratic_biases
-        ), "incorrect weights for quadratic biases"
+            expected_quadratic_weights == actual_weights.quadratic_weights
+        ), "incorrect quadratic weights"
 
     def test_kinetic_weights_for_sightly_higher_resolution_fields(self):
         """
         This tests that the correct weights are generated using a small but not
-        minimal number of spins for the fields
+        minimal number of spins for the fields.
         """
         # Each field should have four valid bitstrings:
         # |10000>, |11000>, |11100>, and |11110>.
@@ -152,19 +152,19 @@ class TestSpinHamiltonian():
         # All the weights should be exactly representable in binary so we can
         # make floating-point number comparisons without needing a tolerance.
         assert (
-            {} == actual_weights.linear_biases
-        ), "incorrect weights for linear biases"
+            {} == actual_weights.linear_weights
+        ), "incorrect linear weights"
         assert (
             len(expected_quadratic_weights.keys())
-            == len(actual_weights.quadratic_biases.keys())
-        ), "incorrect number of keys for quadratic biases"
+            == len(actual_weights.quadratic_weights.keys())
+        ), "incorrect number of keys for quadratic weights"
         assert (
             expected_quadratic_weights.keys()
-            == actual_weights.quadratic_biases.keys()
-        ), "incorrect keys for quadratic biases"
+            == actual_weights.quadratic_weights.keys()
+        ), "incorrect keys for quadratic weights"
         assert (
-            expected_quadratic_weights == actual_weights.quadratic_biases
-        ), "incorrect weights for quadratic biases"
+            expected_quadratic_weights == actual_weights.quadratic_weights
+        ), "incorrect quadratic weights"
 
     def test_weights_for_potential_proportional_to_field_value(self):
         # In this case, the linear term is irrelevant.

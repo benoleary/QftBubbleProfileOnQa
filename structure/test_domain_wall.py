@@ -120,7 +120,7 @@ class TestDomainWallWeighters():
         )
         fixing_weight = 11.0
 
-        spin_biases = SpinDomainWallWeighter().weights_for_fixed_value(
+        spin_biases = domain_wall_weighter.weights_for_fixed_value(
             field_at_point=test_field,
             fixing_weight=fixing_weight,
             number_of_ones=number_of_ones

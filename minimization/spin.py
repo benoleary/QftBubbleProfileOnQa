@@ -18,8 +18,8 @@ class SpinSamplerHandler:
             additional_arguments: Dict[str, Union[str, int]]
     ) -> SampleSet:
         appropriate_arguments = {
-                "h": weight_container.linear_biases,
-                "J": weight_container.quadratic_biases,
+                "h": weight_container.linear_weights,
+                "J": weight_container.quadratic_weights,
                 **additional_arguments
         }
         return chosen_sampler.sample_ising(**appropriate_arguments)
