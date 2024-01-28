@@ -66,17 +66,17 @@ class TestSpinDomainWallWeighter():
     @pytest.mark.parametrize(
             "number_of_ones",
             [
-                (1,),
-                (2,),
-                (3,),
-                (4,),
-                (5,),
+                1,
+                2,
+                3,
+                4,
+                5,
                 # We also test the negative input convention.
-                (-1,),
-                (-2,),
-                (-3,),
-                (-4,),
-                (-5,)
+                -1,
+                -2,
+                -3,
+                -4,
+                -5
             ]
     )
     def test_fixing_value(self, number_of_ones):

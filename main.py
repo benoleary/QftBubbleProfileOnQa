@@ -2,7 +2,9 @@ import argparse
 from dataclasses import dataclass
 
 import basis.variable
-from input.configuration import FullConfiguration
+from dynamics.hamiltonian import AnnealerHamiltonian
+from dynamics.spin import SpinHamiltonian
+from input.configuration import AnnealerConfiguration, FullConfiguration
 from minimization.sampling import SamplePovider, SamplerHandler
 from minimization.spin import SpinSamplerHandler
 from output.printing import CsvWriter
@@ -11,15 +13,22 @@ from structure.domain_wall import DomainWallWeighter
 from structure.spin import SpinDomainWallWeighter
 
 
-@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+# We would like to use kw_only=True, but that needs Python 3.10 or later.
+@dataclass(frozen=True, repr=False, eq=False)
 class VariableTypeDependence:
+    annealer_Hamiltonian: AnnealerHamiltonian
     domain_wall_weighter: DomainWallWeighter
     sample_handler: SamplerHandler
 
 
-def get_variable_type_dependence(variable_type: str) -> VariableTypeDependence:
+def get_variable_type_dependence(
+        *,
+        variable_type: str,
+        annealer_configuration: AnnealerConfiguration
+    ) -> VariableTypeDependence:
     if variable_type == "spin":
         return VariableTypeDependence(
+            annealer_Hamiltonian=SpinHamiltonian(annealer_configuration),
             domain_wall_weighter=SpinDomainWallWeighter(),
             sample_handler=SpinSamplerHandler()
         )
@@ -35,13 +44,14 @@ def main():
     parsed_arguments = argument_parser.parse_args()
 
     full_configuration = FullConfiguration(parsed_arguments.input_file)
-    variale_type_dependence = get_variable_type_dependence(
-        full_configuration.annealer_configuration.variable_type
+    variable_type_dependence = get_variable_type_dependence(
+        variable_type=full_configuration.annealer_configuration.variable_type,
+        annealer_configuration=full_configuration.annealer_configuration
     )
 
     bubble_profile = BubbleProfile(
-        annealer_Hamiltonian=full_configuration.annealer_configuration,
-        domain_wall_weighter=variale_type_dependence.sample_handler,
+        annealer_Hamiltonian=variable_type_dependence.annealer_Hamiltonian,
+        domain_wall_weighter=variable_type_dependence.sample_handler,
         spatial_lattice_configuration=(
             full_configuration.spatial_lattice_configuration
         )
@@ -53,7 +63,7 @@ def main():
     ) if sampler_name == "dwave" else None
     sample_provider = SamplePovider(
             sampler_name=sampler_name,
-            sampler_handler=variale_type_dependence.sample_handler,
+            sampler_handler=variable_type_dependence.sample_handler,
             message_for_Leap=message_for_Leap,
             number_of_shots=(
                 full_configuration.annealer_configuration.number_of_shots

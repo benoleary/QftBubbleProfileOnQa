@@ -71,21 +71,24 @@ class QftModelConfiguration:
         )
 
 
-@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+# We would like to use kw_only=True, but that needs Python 3.10 or later.
+@dataclass(frozen=True, repr=False, eq=False)
 class SpatialLatticeConfiguration:
     number_of_spatial_steps: int
     spatial_step_in_inverse_GeV: float
     volume_exponent: int
 
 
-@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+# We would like to use kw_only=True, but that needs Python 3.10 or later.
+@dataclass(frozen=True, repr=False, eq=False)
 class AnnealerConfiguration:
     variable_type: str = "bit"
     sampler_name: str = "default"
     number_of_shots: Optional[int] = None
 
 
-@dataclass(kw_only=True, frozen=True, repr=False, eq=False)
+# We would like to use kw_only=True, but that needs Python 3.10 or later.
+@dataclass(frozen=True, repr=False, eq=False)
 class OutputConfiguration:
     output_CSV_filename: Optional[str] = None
     command_for_gnuplot: Optional[str] = None

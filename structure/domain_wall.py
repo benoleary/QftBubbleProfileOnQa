@@ -20,7 +20,7 @@ class DomainWallWeighter(Protocol):
         raise NotImplementedError("DomainWallWeighter is just a Protocol")
 
     def weights_for_fixed_value(
-         self,
+            self,
             *,
             field_at_point: FieldAtPoint,
             fixing_weight: float,

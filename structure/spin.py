@@ -19,7 +19,7 @@ class SpinDomainWallWeighter:
     ) -> WeightAccumulator:
         first_field_template, second_field_template = (
             _domain_wall_templates_for_first_and_second_fields(
-                profile_at_point=profiles_at_points[0],
+                fields_at_point=profiles_at_points[0],
                 end_weight=end_weight,
                 alignment_weight=alignment_weight
             )
@@ -73,7 +73,7 @@ class SpinDomainWallWeighter:
                 f" {-number_of_ones} were requested (as negative input)"
             )
         spin_biases = WeightAccumulator(
-            initial_linears={
+            linear_weights={
                 binary_variable_name: fixing_weight
                 for binary_variable_name
                 in field_at_point.binary_variable_names[:number_of_ones]

@@ -22,14 +22,17 @@ def scaled_linears_for_variable_names(
 
 
 class WeightAccumulator:
+    linear_weights: Dict[str, float]
+    quadratic_weights: Dict[Tuple[str, str], float]
+
     def __init__(
             self,
             *,
-            linear_weights: Dict[str, float],
-            quadratic_weights: Dict[Tuple[str, str], float]
+            linear_weights: Optional[Dict[str, float]] = None,
+            quadratic_weights: Optional[Dict[Tuple[str, str], float]] = None
     ):
-        self.linear_weights = linear_weights
-        self.quadratic_weights = quadratic_weights
+        self.linear_weights = linear_weights or {}
+        self.quadratic_weights = quadratic_weights or {}
 
     def add_linears(self, weights_to_add: Dict[str, float]):
         for k, v in weights_to_add.items():

@@ -85,14 +85,14 @@ _spin_sampler_handler = SpinSamplerHandler()
 # TODO: tests with second field
 class TestAnnealerHamiltonians():
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian", "domain_wall_weighter", "sampler_handler"
+            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
                     # The potential does not matter for the test of the kinetic
                     # term, so we just use the simpler case.
                     _spin_linear_potential,
-                    _spin_sampler_handler,
-                    _spin_domain_wall_weighter
+                    _spin_domain_wall_weighter,
+                    _spin_sampler_handler
                 )
             ]
     )
@@ -219,12 +219,12 @@ class TestAnnealerHamiltonians():
         ), "expected correct differences for all valid bitstrings"
 
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian", "domain_wall_weighter", "sampler_handler"
+            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
                     _spin_linear_potential,
-                    _spin_sampler_handler,
-                    _spin_domain_wall_weighter
+                    _spin_domain_wall_weighter,
+                    _spin_sampler_handler
                 )
             ]
     )
@@ -249,12 +249,12 @@ class TestAnnealerHamiltonians():
         ), "expected domain wall completely to the left"
 
     @pytest.mark.parametrize(
-            "annealer_Hamiltonian", "domain_wall_weighter", "sampler_handler"
+            "annealer_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
                     _spin_quadratic_potential,
-                    _spin_sampler_handler,
-                    _spin_domain_wall_weighter
+                    _spin_domain_wall_weighter,
+                    _spin_sampler_handler
                 )
             ]
     )

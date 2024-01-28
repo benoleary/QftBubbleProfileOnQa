@@ -20,15 +20,6 @@ class SpinHamiltonian(HasDiscretizedPotential):
             model_configuration.potential_in_quartic_GeV_per_field_step
         )
         self.model_configuration = model_configuration
-        self.first_field_domain_wall_template = _weights_for_domain_wall(
-            model_configuration.first_field.number_of_values + 1
-        )
-        self.second_field_domain_wall_template = (
-            None if not  model_configuration.second_field
-            else _weights_for_domain_wall(
-                model_configuration.second_field.number_of_values + 1
-            )
-        )
         self.first_field_positive_block = _constant_quadratics_block(
             model_configuration.first_field
         )
@@ -70,23 +61,6 @@ class SpinHamiltonian(HasDiscretizedPotential):
 
     def get_maximum_potential_difference(self) -> float:
         return self.maximum_potential_difference
-
-    def domain_wall_weights(
-            self,
-            field_at_point: FieldAtPoint
-    ) -> WeightAccumulator:
-        weight_template = self._linear_weight_template_for(
-            field_at_point.field_definition
-        )
-        return WeightAccumulator(
-            linear_weights=weight_template.first_linears_for_variable_names(
-                field_at_point.binary_variable_names
-            ),
-            quadratic_weights=weight_template.quadratics_for_variable_names(
-                first_variable_names=field_at_point.binary_variable_names,
-                second_variable_names=field_at_point.binary_variable_names
-            )
-        )
 
     def kinetic_weights(
             self,
@@ -178,80 +152,15 @@ class SpinHamiltonian(HasDiscretizedPotential):
             * field_difference_over_radius_step
         )
 
-    def _template_for_first_or_second(
-            self,
-            *,
-            field_definition: FieldDefinition,
-            template_for_first: WeightTemplate,
-            template_for_second: WeightTemplate
-    ) -> WeightTemplate:
-        if field_definition == self.model_configuration.first_field:
-            return template_for_first
-        if field_definition == self.model_configuration.second_field:
-            return template_for_second
-        raise ValueError(f"unknown field {field_definition.field_name}")
-
-    def _linear_weight_template_for(
-            self,
-            field_definition: FieldDefinition
-    ) -> WeightTemplate:
-        return self._template_for_first_or_second(
-            field_definition=field_definition,
-            template_for_first=self.first_field_domain_wall_template,
-            template_for_second=self.second_field_domain_wall_template
-        )
-
     def _positive_block_template_for(
             self,
             field_definition: FieldDefinition
     ) -> WeightTemplate:
-        return self._template_for_first_or_second(
-            field_definition=field_definition,
-            template_for_first=self.first_field_positive_block,
-            template_for_second=self.second_field_positive_block
-        )
-
-
-def _weights_for_domain_wall(
-        *,
-        number_of_spins: int,
-        end_spin_weight: float,
-        spin_alignment_weight: float
-) -> WeightTemplate:
-    """
-    This returns the weights to ensure that the spins are valid for the
-    Ising-chain domain wall model, in a form that can be combined with a
-    FieldAtPoint to create a pair of dicts in the form for sample_ising: a dict
-    of linear biases, which could be represented by a vector, and a dict of
-    quadratic biases, which could be represented as an upper-triangular matrix
-    of correlation weights, with zeros on the diagonal. (Apparently it is not
-    necessary that the dict is "upper-triangular"; the middleware seems to
-    cope.)
-    """
-    # This is the case of a FieldAtPoint having correlations between its own
-    # variables.
-    spin_weights = WeightTemplate(
-        first_number_of_values=number_of_spins,
-        second_number_of_values=number_of_spins
-    )
-
-    # First, we set the weights to fix the ends so that there is a domain of 1s
-    # from the first index and a domain of 0s ending at the last index. The
-    # signs are this way because we want the first spin to be |1> which
-    # multiplies its weight by -1 in the objective function, and the last spin
-    # to be |0> which multiplies its weight by +1.
-    spin_weights.first_linear_weights[0] = end_spin_weight
-    spin_weights.first_linear_weights[-1] = -end_spin_weight
-
-    # Next, each pair of nearest neighbors gets weighted to favor having the
-    # same values - which is either (-1)^2 or (+1)^2, so +1, while opposite
-    # values multiply the weighting by (-1) * (+1) = -1. Therefore, a negative
-    # weighting will penalize opposite spins with a positive contribution to the
-    # objective function.
-    for i in range(number_of_spins - 1):
-        spin_weights.quadratic_weights[i][i + 1] = -spin_alignment_weight
-
-    return spin_weights
+        if field_definition == self.model_configuration.first_field:
+            return self.first_field_positive_block
+        if field_definition == self.model_configuration.second_field:
+            return self.second_field_positive_block
+        raise ValueError(f"unknown field {field_definition.field_name}")
 
 
 def _weights_for_single_field_potential_at_point(
@@ -289,7 +198,9 @@ def _weights_for_single_field_potential_at_point(
     )
 
     for i, next_value in enumerate(next_values):
-        spin_weights[i] = 0.5 * (previous_value - next_value)
+        spin_weights.first_linear_weights[i] = (
+            0.5 * (previous_value - next_value)
+        )
 
     return spin_weights
 
@@ -326,4 +237,3 @@ def _constant_quadratics_block(
                 for _ in range(number_of_values)
             ]
         )
-

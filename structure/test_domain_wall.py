@@ -14,7 +14,7 @@ _spin_weighter = SpinDomainWallWeighter()
 class TestDomainWallWeighters():
     @pytest.mark.parametrize(
             "domain_wall_weighter",
-            [(_spin_weighter,)]
+            [_spin_weighter]
     )
     def test_all_valid_strengths_for_only_domain_wall_conditions(
         self,
@@ -82,10 +82,10 @@ class TestDomainWallWeighters():
 
     @pytest.mark.parametrize(
             "domain_wall_weighter",
-            [(_spin_weighter,)]
+            [_spin_weighter]
     )
     @pytest.mark.parametrize(
-            "domain_wall_weighter", "number_of_ones, expected_bitstring",
+            "number_of_ones, expected_bitstring",
             [
                 (1, "100000"),
                 (2, "110000"),
@@ -106,7 +106,6 @@ class TestDomainWallWeighters():
         number_of_ones,
         expected_bitstring
     ):
-        # TODO: fix this
         test_field = FieldAtPoint(
             field_definition=FieldDefinition(
                 field_name="t",
