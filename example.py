@@ -47,7 +47,7 @@ def create_input():
     _add_output_element(root_element)
 
     xml.etree.ElementTree.ElementTree(root_element).write(
-        "created_example.xml",
+        "example.xml",
         encoding="utf8"
     )
 
@@ -97,7 +97,7 @@ def _add_qft_element(
         str(first_field_bound_in_GeV)
     )
     _add(
-        root_element,
+        qft_element,
         "potential_in_quartic_GeV_per_field_step",
         ";".join(str(v) for v in potential_in_quartic_GeV_per_field_step)
     )
