@@ -137,6 +137,17 @@ class FullConfiguration:
                     )
                 )
 
+        potential_element = qft_element.find(
+            "potential_in_quartic_GeV_per_field_step"
+        )
+
+        if potential_element is None:
+            raise ValueError("No XML element for potential")
+        potential_per_field_step=[
+            [float(v) for v in potential_row.split(";")]
+            for potential_row in potential_element.text.split("#")
+        ]
+
         first_field = qft_xml_field_definition(
             element_name="first_field",
             number_of_values=len(potential_per_field_step[0])
@@ -149,21 +160,10 @@ class FullConfiguration:
             number_of_values=len(potential_per_field_step)
         )
 
-        potential_element = qft_element.find(
-            "potential_in_quartic_GeV_per_field_step"
-        )
-
-        if potential_element is None:
-            raise ValueError("No XML element for potential")
-        potential_per_field_step=[
-            [float(v) for v in potential_row.split(";")]
-            for potential_row in potential_element.text.split("#")
-        ]
-
         self.QFT_model_configuration = QftModelConfiguration(
             first_field=first_field,
             second_field=second_field,
-            potential_in_quartic_GeV_per_field_step=potential_element
+            potential_in_quartic_GeV_per_field_step=potential_per_field_step
         )
 
         space_element = input_xml_root.find("space")

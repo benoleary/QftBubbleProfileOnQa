@@ -1,12 +1,13 @@
 import dwave.inspector
 
-from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
+from basis.field import FieldCollectionAtPoint, FieldDefinition
 import basis.variable
 from dynamics.spin import SpinHamiltonian
 from input.configuration import (
     QftModelConfiguration, SpatialLatticeConfiguration
 )
-import minimization.sampling
+from minimization.sampling import SampleProvider
+from minimization.spin import SpinSamplerHandler
 from structure.bubble import BubbleProfile
 from structure.spin import SpinDomainWallWeighter
 
@@ -20,10 +21,13 @@ def inspect_single_chain_for_single_field(sampler_name: str):
         true_vacuum_value_in_GeV=0.0,
         false_vacuum_value_in_GeV=6.0
     )
-    test_field_at_point = FieldAtPoint(
-        field_definition=test_field_definition,
-        spatial_point_identifier="x0"
+    test_fields_at_point = FieldCollectionAtPoint(
+        spatial_point_identifier="x0",
+        spatial_radius_in_inverse_GeV=1.0,
+        first_field=test_field_definition
     )
+    test_field_at_point=test_fields_at_point.first_field
+
     end_weight = 10.0
     alignment_weight = 3.5
     test_domain_wall_weighter = SpinDomainWallWeighter()
@@ -45,20 +49,23 @@ def inspect_single_chain_for_single_field(sampler_name: str):
             )
         )
     )
+
     test_weights.add(
         test_domain_wall_weighter.weights_for_domain_walls(
-            profiles_at_points=[FieldCollectionAtPoint(test_field_at_point)],
+            profiles_at_points=[test_fields_at_point],
             end_weight=end_weight,
             alignment_weight=alignment_weight
         )
     )
 
-    sampling_result = minimization.sampling.get_sample(
-        spin_biases=test_weights,
+    test_sample_provider = SampleProvider(
+        sampler_name=sampler_name,
+        sampler_handler=SpinSamplerHandler(),
         message_for_Leap="Just a field as a single chain",
-        number_of_shots=100,
-        sampler_name=sampler_name
+        number_of_shots=100
     )
+    sampling_result = test_sample_provider.get_sample(test_weights)
+
     lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
     basis.variable.print_bitstrings(
         "lowest energies for single field chain:",
@@ -100,11 +107,15 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         spatial_lattice_configuration=spatial_lattice_configuration
     )
 
-    penalizing_kinetic_result = minimization.sampling.get_sample(
-        spin_biases=bubble_profile.annealing_weights,
+    test_sample_provider = SampleProvider(
+        sampler_name=sampler_name,
+        sampler_handler=SpinSamplerHandler(),
         message_for_Leap="Just kinetic weights expecting flat profile",
-        number_of_shots=100,
-        sampler_name=sampler_name
+        number_of_shots=100
+    )
+
+    penalizing_kinetic_result = test_sample_provider.get_sample(
+        bubble_profile.annealing_weights
     )
     basis.variable.print_bitstrings(
         "lowest energies for just kinetic term:",
@@ -122,10 +133,11 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     rewarding_kinetic = bubble_profile.annealing_weights
     rewarding_kinetic.add_quadratics(weights_to_flip_kinetic)
 
-    rewarding_kinetic_result = minimization.sampling.get_sample(
-        spin_biases=rewarding_kinetic,
-        message_for_Leap="Just kinetic weights expecting zig-zag profile",
-        sampler_name=sampler_name
+    test_sample_provider.message_for_Leap = (
+        "Just kinetic weights expecting zig-zag profile"
+    )
+    rewarding_kinetic_result = test_sample_provider.get_sample(
+        rewarding_kinetic
     )
     basis.variable.print_bitstrings(
         "lowest energies for inverted kinetic term:",
@@ -167,11 +179,15 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
         spatial_lattice_configuration=spatial_lattice_configuration
     )
 
-    full_result = minimization.sampling.get_sample(
-        spin_biases=bubble_profile.annealing_weights,
+    test_sample_provider = SampleProvider(
+        sampler_name=sampler_name,
+        sampler_handler=SpinSamplerHandler(),
         message_for_Leap="Low resolution single field with linear potential",
-        number_of_shots=100,
-        sampler_name=sampler_name
+        number_of_shots=100
+    )
+
+    full_result = test_sample_provider.get_sample(
+        bubble_profile.annealing_weights
     )
     basis.variable.print_bitstrings(
         "lowest energies:",
@@ -184,6 +200,6 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
 
 
 if __name__ == "__main__":
-    inspect_single_chain_for_single_field("dwave")
+    # inspect_single_chain_for_single_field("dwave")
     # flat_and_zigzag_from_kinetic_term("default")
-    # low_resolution_single_field_with_linear_potential("default")
+    low_resolution_single_field_with_linear_potential("default")

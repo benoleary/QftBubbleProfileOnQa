@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
 from dynamics.spin import SpinHamiltonian
-from input.configuration import AnnealerConfiguration, FullConfiguration
+from input.configuration import QftModelConfiguration, FullConfiguration
 from minimization.sampling import SampleProvider, SamplerHandler
 from minimization.spin import SpinSamplerHandler
 from output.printing import CsvWriter
@@ -24,11 +24,11 @@ class VariableTypeDependence:
 def get_variable_type_dependence(
         *,
         variable_type: str,
-        annealer_configuration: AnnealerConfiguration
+        QFT_model_configuration: QftModelConfiguration
     ) -> VariableTypeDependence:
     if variable_type == "spin":
         return VariableTypeDependence(
-            annealer_Hamiltonian=SpinHamiltonian(annealer_configuration),
+            annealer_Hamiltonian=SpinHamiltonian(QFT_model_configuration),
             domain_wall_weighter=SpinDomainWallWeighter(),
             sample_handler=SpinSamplerHandler()
         )
@@ -46,12 +46,12 @@ def main():
     full_configuration = FullConfiguration(parsed_arguments.input_file)
     variable_type_dependence = get_variable_type_dependence(
         variable_type=full_configuration.annealer_configuration.variable_type,
-        annealer_configuration=full_configuration.annealer_configuration
+        QFT_model_configuration=full_configuration.QFT_model_configuration
     )
 
     bubble_profile = BubbleProfile(
         annealer_Hamiltonian=variable_type_dependence.annealer_Hamiltonian,
-        domain_wall_weighter=variable_type_dependence.sample_handler,
+        domain_wall_weighter=variable_type_dependence.domain_wall_weighter,
         spatial_lattice_configuration=(
             full_configuration.spatial_lattice_configuration
         )
@@ -110,7 +110,7 @@ def main():
 
     if output_CSV_filename:
         print(f"writing profile in {output_CSV_filename}")
-        CsvWriter(bubble_profile).write_file(
+        CsvWriter(bubble_profile=bubble_profile).write_file(
             output_CSV_filename=output_CSV_filename,
             solution_sample=lowest_energy_sample
         )
