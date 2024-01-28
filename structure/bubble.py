@@ -1,16 +1,9 @@
-from typing import Dict, List
-from dimod import SampleSet
-
 from basis.field import FieldCollectionAtPoint
 import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
 from input.configuration import SpatialLatticeConfiguration
-import minimization.sampling
 from minimization.weight import WeightAccumulator
 from structure.domain_wall import DomainWallWeighter
-
-
-_separation_character = ";"
 
 
 class BubbleProfile:
@@ -57,46 +50,12 @@ class BubbleProfile:
             create_at_point(spatial_index=i)
             for i in range(self.number_of_point_profiles)
         ]
-        maximum_variable_weight = self._get_maximum_variable_weight()
-        domain_wall_alignment_weight = 2.0 * maximum_variable_weight
+        self.maximum_variable_weight = self._get_maximum_variable_weight()
+        domain_wall_alignment_weight = 2.0 * self.maximum_variable_weight
         domain_end_fixing_weight = 2.0 * domain_wall_alignment_weight
         self.annealing_weights = self._set_up_weights(
             alignment_weight=domain_wall_alignment_weight,
             end_weight=domain_end_fixing_weight
-        )
-
-    def map_radius_labels_to_field_strengths_from_lowest_sample(
-            self,
-            sample_set: SampleSet
-    ) -> Dict[str, Dict[str, float]]:
-        lowest_energy_sample = minimization.sampling.get_lowest_sample_from_set(
-            sample_set
-        )
-        return {
-            p.spatial_point_identifier: {
-                f.field_definition.field_name: f.in_GeV(lowest_energy_sample)
-                for f in p.get_fields()
-            }
-            for p in self.fields_at_points
-        }
-
-    def lowest_sample_as_CSV_file_content(
-            self,
-            sample_set: SampleSet
-    ) -> List[str]:
-        lowest_energy_sample = minimization.sampling.get_lowest_sample_from_set(
-            sample_set
-        )
-        # TODO: enhance for second field
-        return (
-            [
-                f"r in 1/GeV {_separation_character}"
-                f" {self.first_field.field_name} in GeV"
-            ]
-            + [
-                self._row_for_CSV(row_index=r, sample_set=lowest_energy_sample)
-                for r in range(self.number_of_point_profiles)
-            ]
         )
 
     def _get_volume_factor(self, radius_value: float) -> float:

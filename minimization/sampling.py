@@ -16,16 +16,6 @@ def get_sampler(sampler_name: str) -> Sampler:
     return SimulatedAnnealingSampler()
 
 
-def get_lowest_sample_from_set(sample_set: SampleSet) -> Dict[str, float]:
-    lowest_energy_sample, = next(
-        sample_set.lowest().data(
-            fields=["sample"],
-            sorted_by="energy"
-        )
-    )
-    return lowest_energy_sample
-
-
 class SamplerHandler(Protocol):
     """
     This class defines the method by which a given dimod.Sampler is used to get
@@ -75,3 +65,12 @@ class SamplePovider:
             weight_container=weight_container,
             additional_arguments=appropriate_arguments
         )
+
+    def get_lowest_from_set(self, sample_set: SampleSet) -> Dict[str, float]:
+        lowest_energy_sample, = next(
+            sample_set.lowest().data(
+                fields=["sample"],
+                sorted_by="energy"
+            )
+        )
+        return lowest_energy_sample

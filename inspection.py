@@ -1,13 +1,14 @@
 import dwave.inspector
 
 from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
-from structure.spin import SpinDomainWallWeighter
-
-import minimization.sampling
 import basis.variable
-from input.configuration import DiscreteConfiguration, FieldDefinition
+from dynamics.spin import SpinHamiltonian
+from input.configuration import (
+    QftModelConfiguration, SpatialLatticeConfiguration
+)
+import minimization.sampling
 from structure.bubble import BubbleProfile
-import dynamics.potential
+from structure.spin import SpinDomainWallWeighter
 
 
 def inspect_single_chain_for_single_field(sampler_name: str):
@@ -71,10 +72,7 @@ def inspect_single_chain_for_single_field(sampler_name: str):
 
 def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     number_of_field_values = 5
-    test_configuration = DiscreteConfiguration(
-        number_of_spatial_steps=2,
-        spatial_step_in_inverse_GeV=1.0,
-        volume_exponent=0,
+    QFT_model_configuration = QftModelConfiguration(
         first_field=FieldDefinition(
             field_name="f",
             number_of_values=number_of_field_values,
@@ -87,10 +85,23 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
             [0.0 for _ in range(number_of_field_values)]
         ]
     )
-    test_bubble_profile = BubbleProfile(test_configuration)
+    spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+    domain_wall_weighter = SpinDomainWallWeighter()
+    radius_step = 1.0
+    spatial_lattice_configuration = SpatialLatticeConfiguration(
+        number_of_spatial_steps=2,
+        spatial_step_in_inverse_GeV=radius_step,
+        volume_exponent=0
+    )
+
+    bubble_profile = BubbleProfile(
+        annealer_Hamiltonian=spin_Hamiltonian,
+        domain_wall_weighter=domain_wall_weighter,
+        spatial_lattice_configuration=spatial_lattice_configuration
+    )
 
     penalizing_kinetic_result = minimization.sampling.get_sample(
-        spin_biases=test_bubble_profile.spin_biases,
+        spin_biases=bubble_profile.annealing_weights,
         message_for_Leap="Just kinetic weights expecting flat profile",
         number_of_shots=100,
         sampler_name=sampler_name
@@ -100,27 +111,15 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
         penalizing_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
 
-    center_field = test_bubble_profile.fields_at_points[0].first_field
-    intermediate_field = test_bubble_profile.fields_at_points[1].first_field
-    outer_field = test_bubble_profile.fields_at_points[2].first_field
-    radius_step = test_configuration.spatial_step_in_inverse_GeV
-    kinetic_weights = dynamics.kinetic.weights_for_difference(
-        at_smaller_radius=center_field,
-        at_larger_radius=intermediate_field,
-        radius_difference_in_inverse_GeV=radius_step
-    )
-    kinetic_weights.add(
-        dynamics.kinetic.weights_for_difference(
-            at_smaller_radius=intermediate_field,
-            at_larger_radius=outer_field,
-            radius_difference_in_inverse_GeV=radius_step
-        )
-    )
+    # This is a bit hacky, obbviously.
+    kinetic_weights = bubble_profile._get_kinetic_weights(radius_step)
     weights_to_flip_kinetic = {
         k: -2.0 * v
-        for k, v in kinetic_weights.quadratic_biases.items()
+        for k, v in kinetic_weights.quadratic_weights.items()
     }
-    rewarding_kinetic = test_bubble_profile.spin_biases
+    # Continuing the hackiness, the bubble profile's weights are now going to be
+    # changed, but we do not need the original weights any more.
+    rewarding_kinetic = bubble_profile.annealing_weights
     rewarding_kinetic.add_quadratics(weights_to_flip_kinetic)
 
     rewarding_kinetic_result = minimization.sampling.get_sample(
@@ -140,10 +139,7 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
 
 def low_resolution_single_field_with_linear_potential(sampler_name: str):
     number_of_field_values = 5
-    test_configuration = DiscreteConfiguration(
-        number_of_spatial_steps=4,
-        spatial_step_in_inverse_GeV=1.0,
-        volume_exponent=0,
+    QFT_model_configuration = QftModelConfiguration(
         first_field=FieldDefinition(
             field_name="f",
             number_of_values=number_of_field_values,
@@ -156,10 +152,23 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
             [0.6 * f for f in range(number_of_field_values)]
         ]
     )
-    test_bubble_profile = BubbleProfile(test_configuration)
+    spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+    domain_wall_weighter = SpinDomainWallWeighter()
+    radius_step = 1.0
+    spatial_lattice_configuration = SpatialLatticeConfiguration(
+        number_of_spatial_steps=4,
+        spatial_step_in_inverse_GeV=radius_step,
+        volume_exponent=0
+    )
+
+    bubble_profile = BubbleProfile(
+        annealer_Hamiltonian=spin_Hamiltonian,
+        domain_wall_weighter=domain_wall_weighter,
+        spatial_lattice_configuration=spatial_lattice_configuration
+    )
 
     full_result = minimization.sampling.get_sample(
-        spin_biases=test_bubble_profile.spin_biases,
+        spin_biases=bubble_profile.annealing_weights,
         message_for_Leap="Low resolution single field with linear potential",
         number_of_shots=100,
         sampler_name=sampler_name

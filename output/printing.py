@@ -29,6 +29,16 @@ class CsvWriter:
         )
         self.separation_character = separation_character
 
+    def write_file(
+            self,
+            *,
+            output_CSV_filename: str,
+            solution_sample: SampleSet
+    ):
+        content_for_CSV = self.file_lines(solution_sample)
+        with open(output_CSV_filename, "w") as output_file:
+            output_file.write("\n".join(content_for_CSV) + "\n")
+
     def file_lines(self, solution_sample: SampleSet) -> List[str]:
         # TODO: enhance for second field
         return (
