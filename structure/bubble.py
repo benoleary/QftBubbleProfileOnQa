@@ -1,9 +1,25 @@
-from basis.field import FieldCollectionAtPoint
+from __future__ import annotations
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Optional
+
+from dimod import SampleSet
+
+from basis.field import FieldAtPoint, FieldCollectionAtPoint
 import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
 from input.configuration import SpatialLatticeConfiguration
+from minimization.sampling import SampleProvider
 from minimization.weight import WeightAccumulator
 from structure.domain_wall import DomainWallWeighter
+
+
+# We would like to use kw_only=True, but that needs Python 3.10 or later.
+@dataclass(frozen=True, repr=False, eq=False)
+class ProfilePoint:
+    radius_in_inverse_GeV: float
+    first_field_strength_in_GeV: float
+    second_field_strength_in_GeV: Optional[float]
 
 
 class BubbleProfile:
@@ -56,6 +72,76 @@ class BubbleProfile:
         self.annealing_weights = self._set_up_weights(
             alignment_weight=domain_wall_alignment_weight,
             end_weight=domain_end_fixing_weight
+        )
+
+    def field_strengths_at_radius_values(
+            self,
+            *,
+            solution_sample: SampleSet,
+            sample_provider: SampleProvider
+    ) -> Sequence[ProfilePoint]:
+        spatial_step = (
+            self.spatial_lattice_configuration.spatial_step_in_inverse_GeV
+        )
+        return [
+           self._profile_at_radius_index(
+               radius_index=i,
+               spatial_step_in_inverse_GeV=spatial_step,
+               fields_at_point=f,
+               solution_sample=solution_sample,
+               sample_provider=sample_provider
+            )
+           for i, f in enumerate(self.fields_at_points)
+        ]
+
+    def _profile_at_radius_index(
+            self,
+            *,
+            radius_index: int,
+            spatial_step_in_inverse_GeV: float,
+            fields_at_point: FieldCollectionAtPoint,
+            solution_sample: SampleSet,
+            sample_provider: SampleProvider
+    ) -> ProfilePoint:
+        return ProfilePoint(
+            radius_in_inverse_GeV=(radius_index * spatial_step_in_inverse_GeV),
+            first_field_strength_in_GeV=(
+                self._get_field_strength_in_GeV(
+                    field_at_point=fields_at_point.first_field,
+                    solution_sample=solution_sample,
+                    sample_provider=sample_provider
+                )
+            ),
+            second_field_strength_in_GeV=(
+                None if not fields_at_point.second_field
+                else self._get_field_strength_in_GeV(
+                    field_at_point=fields_at_point.second_field,
+                    solution_sample=solution_sample,
+                    sample_provider=sample_provider
+                )
+            )
+        )
+
+    def _get_field_strength_in_GeV(
+            self,
+            *,
+            field_at_point: FieldAtPoint,
+            solution_sample: SampleSet,
+            sample_provider: SampleProvider
+    ) -> float:
+        field_value_in_ones = (
+            sample_provider.get_number_of_variables_in_one_state(
+                variable_names=field_at_point.binary_variable_names,
+                sample_set=solution_sample
+            )
+        )
+        return (
+            field_at_point.field_definition.lower_bound_in_GeV
+            + (
+                # We have to remove the first variable which is fixed to |1>.
+                (field_value_in_ones - 1)
+                * field_at_point.field_definition.step_in_GeV
+            )
         )
 
     def _get_volume_factor(self, radius_value: float) -> float:
@@ -189,19 +275,10 @@ class BubbleProfile:
             calculated_biases.add(
                 self.annealer_Hamiltonian.kinetic_weights(
                     radius_step_in_inverse_GeV=spatial_step,
-                    nearer_center=previous_profile.first_field,
-                    nearer_edge=profile_at_point.first_field,
+                    nearer_center=previous_profile,
+                    nearer_edge=profile_at_point,
                     scaling_factor=volume_factor
                 )
             )
-            if profile_at_point.second_field:
-                calculated_biases.add(
-                    self.annealer_Hamiltonian.kinetic_weights(
-                        radius_step_in_inverse_GeV=spatial_step,
-                        nearer_center=previous_profile.second_field,
-                        nearer_edge=profile_at_point.second_field,
-                        scaling_factor=volume_factor
-                    )
-                )
             previous_profile = profile_at_point
         return calculated_biases

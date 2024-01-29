@@ -1,4 +1,5 @@
-from typing import Callable, Tuple
+from __future__ import annotations
+from collections.abc import Callable
 
 
 def for_SM_Higgs(
@@ -6,7 +7,7 @@ def for_SM_Higgs(
         linear_factor: float,
         number_of_steps_from_origin_to_VEV: int,
         number_of_spatial_steps: int
-) -> Tuple[
+) -> tuple[
     float,
     float,
     Callable[[int], float],
@@ -47,7 +48,7 @@ def for_ACS(
         *,
         N: int,
         M: int
-) -> Tuple[
+) -> tuple[
     float,
     float,
     Callable[[int], float],

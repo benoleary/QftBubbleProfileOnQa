@@ -1,22 +1,31 @@
 import pytest
 
 from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
-import basis.variable
 from minimization.sampling import SampleProvider, SamplerHandler
+from minimization.bit import BitSamplerHandler
 from minimization.spin import SpinSamplerHandler
 from structure.domain_wall import DomainWallWeighter
+from structure.bit import BitDomainWallWeighter
 from structure.spin import SpinDomainWallWeighter
 
 
-# TODO: bit versions
-_spin_weighter = SpinDomainWallWeighter()
+_spin_domain_wall_weighter = SpinDomainWallWeighter()
 _spin_sampler_handler = SpinSamplerHandler()
+_bit_domain_wall_weighter = BitDomainWallWeighter()
+_bit_sampler_handler = BitSamplerHandler()
 
 
 class TestDomainWallWeighters():
     @pytest.mark.parametrize(
             "domain_wall_weighter, sampler_handler",
-            [(_spin_weighter, _spin_sampler_handler)]
+            [
+                (_spin_domain_wall_weighter, _spin_sampler_handler),
+                (_bit_domain_wall_weighter, _bit_sampler_handler)
+            ],
+            ids=[
+                "spin",
+                "bit"
+            ]
     )
     def test_all_valid_strengths_for_only_domain_wall_conditions(
         self,
@@ -49,9 +58,10 @@ class TestDomainWallWeighters():
             sampler_handler=sampler_handler
         )
         sampling_result = test_sample_provider.get_sample(annealing_weights)
+
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (
-            basis.variable.bitstrings_to_energies(
+            test_sample_provider.bitstrings_to_energies(
                 binary_variable_names=(
                     test_fields_at_point.first_field.binary_variable_names
                 ),
@@ -89,7 +99,14 @@ class TestDomainWallWeighters():
 
     @pytest.mark.parametrize(
             "domain_wall_weighter, sampler_handler",
-            [(_spin_weighter, _spin_sampler_handler)]
+            [
+                (_spin_domain_wall_weighter, _spin_sampler_handler),
+                (_bit_domain_wall_weighter, _bit_sampler_handler)
+            ],
+            ids=[
+                "spin",
+                "bit"
+            ]
     )
     @pytest.mark.parametrize(
             "number_of_ones, expected_bitstring",
@@ -138,9 +155,10 @@ class TestDomainWallWeighters():
             sampler_handler=sampler_handler
         )
         sampling_result = test_sample_provider.get_sample(annealing_weights)
+
         lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
         actual_bitstrings_to_energies = (
-            basis.variable.bitstrings_to_energies(
+            test_sample_provider.bitstrings_to_energies(
                 binary_variable_names=test_field.binary_variable_names,
                 sample_set=lowest_energy
             )

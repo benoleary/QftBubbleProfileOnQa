@@ -1,7 +1,6 @@
 import dwave.inspector
 
 from basis.field import FieldCollectionAtPoint, FieldDefinition
-import basis.variable
 from dynamics.spin import SpinHamiltonian
 from input.configuration import (
     QftModelConfiguration, SpatialLatticeConfiguration
@@ -67,9 +66,9 @@ def inspect_single_chain_for_single_field(sampler_name: str):
     sampling_result = test_sample_provider.get_sample(test_weights)
 
     lowest_energy = sampling_result.lowest(rtol=0.01, atol=0.1)
-    basis.variable.print_bitstrings(
-        "lowest energies for single field chain:",
-        lowest_energy
+    test_sample_provider.print_bitstrings(
+        title_message="lowest energies for single field chain:",
+        sample_set=lowest_energy
     )
 
     if sampler_name == "dwave":
@@ -117,9 +116,9 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     penalizing_kinetic_result = test_sample_provider.get_sample(
         bubble_profile.annealing_weights
     )
-    basis.variable.print_bitstrings(
-        "lowest energies for just kinetic term:",
-        penalizing_kinetic_result.lowest(rtol=0.01, atol=0.1)
+    test_sample_provider.print_bitstrings(
+        title_message="lowest energies for just kinetic term:",
+        sample_set=penalizing_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
 
     # This is a bit hacky, obbviously.
@@ -139,9 +138,9 @@ def flat_and_zigzag_from_kinetic_term(sampler_name: str):
     rewarding_kinetic_result = test_sample_provider.get_sample(
         rewarding_kinetic
     )
-    basis.variable.print_bitstrings(
-        "lowest energies for inverted kinetic term:",
-        rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
+    test_sample_provider.print_bitstrings(
+        title_message="lowest energies for inverted kinetic term:",
+        sample_set=rewarding_kinetic_result.lowest(rtol=0.01, atol=0.1)
     )
 
     if sampler_name == "dwave":
@@ -189,9 +188,9 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
     full_result = test_sample_provider.get_sample(
         bubble_profile.annealing_weights
     )
-    basis.variable.print_bitstrings(
-        "lowest energies:",
-        full_result.lowest(atol=100.0)
+    test_sample_provider.print_bitstrings(
+        title_message="lowest energies:",
+        sample_set=full_result.lowest(atol=100.0)
     )
 
     if sampler_name == "dwave":
@@ -200,6 +199,6 @@ def low_resolution_single_field_with_linear_potential(sampler_name: str):
 
 
 if __name__ == "__main__":
-    # inspect_single_chain_for_single_field("dwave")
+    inspect_single_chain_for_single_field("dwave")
     # flat_and_zigzag_from_kinetic_term("default")
-    low_resolution_single_field_with_linear_potential("default")
+    # low_resolution_single_field_with_linear_potential("default")

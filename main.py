@@ -1,15 +1,17 @@
 import argparse
 from dataclasses import dataclass
 
-import basis.variable
 from dynamics.hamiltonian import AnnealerHamiltonian
+from dynamics.bit import BitHamiltonian
 from dynamics.spin import SpinHamiltonian
 from input.configuration import QftModelConfiguration, FullConfiguration
 from minimization.sampling import SampleProvider, SamplerHandler
+from minimization.bit import BitSamplerHandler
 from minimization.spin import SpinSamplerHandler
 from output.printing import CsvWriter
 from structure.bubble import BubbleProfile
 from structure.domain_wall import DomainWallWeighter
+from structure.bit import BitDomainWallWeighter
 from structure.spin import SpinDomainWallWeighter
 
 
@@ -32,9 +34,14 @@ def get_variable_type_dependence(
             domain_wall_weighter=SpinDomainWallWeighter(),
             sample_handler=SpinSamplerHandler()
         )
-    # TODO: bit branch
+    if variable_type == "bit":
+        return VariableTypeDependence(
+            annealer_Hamiltonian=BitHamiltonian(QFT_model_configuration),
+            domain_wall_weighter=BitDomainWallWeighter(),
+            sample_handler=BitSamplerHandler()
+        )
     raise ValueError(
-        f"Unkonwn variable type \"{variable_type}\", allowed: \"spin\", \"bit\""
+        f"Unknown variable type \"{variable_type}\", allowed: \"spin\", \"bit\""
     )
 
 
@@ -81,20 +88,32 @@ def main():
     )
     sample_set = sample_provider.get_sample(bubble_profile.annealing_weights)
 
-    basis.variable.print_bitstrings(
-        "lowest energies:",
-        sample_set.lowest(atol=bubble_profile.maximum_variable_weight)
+    sample_provider.print_bitstrings(
+        title_message="lowest energies:",
+        sample_set=sample_set.lowest(
+            atol=bubble_profile.maximum_variable_weight
+        )
     )
 
     lowest_energy_sample = sample_provider.get_lowest_from_set(sample_set)
 
-    converted_to_GeV = {
-        p.spatial_point_identifier: {
-            f.field_definition.field_name: f.in_GeV(lowest_energy_sample)
-            for f in p.get_fields()
-        }
-        for p in bubble_profile.fields_at_points
-    }
+    profile_points = bubble_profile.field_strengths_at_radius_values(
+        solution_sample=lowest_energy_sample,
+        sample_provider=sample_provider
+    )
+    converted_to_GeV = [
+        f"r={p.radius_in_inverse_GeV} ({f.spatial_point_identifier}):"
+        f" {f.first_field.field_definition.field_name}="
+        f"{p.first_field_strength_in_GeV}"
+        + (
+            "" if not f.second_field
+            else (
+                f", {f.second_field.field_definition.field_name}="
+                f"{p.second_field_strength_in_GeV}"
+            )
+        )
+        for f, p in zip(bubble_profile.fields_at_points, profile_points)
+    ]
     print(converted_to_GeV)
 
     # If there is a name for an output CSV file, use it; if not but we are
@@ -112,7 +131,8 @@ def main():
         print(f"writing profile in {output_CSV_filename}")
         CsvWriter(bubble_profile=bubble_profile).write_file(
             output_CSV_filename=output_CSV_filename,
-            solution_sample=lowest_energy_sample
+            solution_sample=lowest_energy_sample,
+            sample_provider=sample_provider
         )
 
         command_for_gnuplot = (

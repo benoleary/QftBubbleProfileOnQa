@@ -1,4 +1,6 @@
-from typing import List, Optional
+from __future__ import annotations
+from collections.abc import Sequence
+from typing import Optional
 from dataclasses import dataclass
 import xml.etree.ElementTree
 
@@ -48,7 +50,7 @@ class QftModelConfiguration:
             *,
             first_field: FieldDefinition,
             second_field: Optional[FieldDefinition] = None,
-            potential_in_quartic_GeV_per_field_step: List[List[float]]
+            potential_in_quartic_GeV_per_field_step: Sequence[Sequence[float]]
     ):
         self.number_of_values_for_second_field = len(
             potential_in_quartic_GeV_per_field_step

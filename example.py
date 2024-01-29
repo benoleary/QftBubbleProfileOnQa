@@ -1,5 +1,7 @@
-from typing import List
+from __future__ import annotations
+from collections.abc import Iterable
 import xml.etree.ElementTree
+
 import comparison.parameters
 
 
@@ -65,7 +67,7 @@ def _add_qft_element(
         *,
         root_element: xml.etree.ElementTree.Element,
         first_field_bound_in_GeV: float,
-        potential_in_quartic_GeV_per_field_step: List[float]
+        potential_in_quartic_GeV_per_field_step: Iterable[float]
 ):
     qft_element = xml.etree.ElementTree.SubElement(
         root_element,

@@ -36,5 +36,23 @@ class TestBiasAccumulator():
         assert expected_quadratics == test_accumulator.quadratic_weights
 
     def test_correct_form_for_QUBO(self):
-        # TODO: implement
-        pass
+        test_accumulator = WeightAccumulator()
+        # We use numbers which will have exact representations in binary so that
+        # we can compare without needing a tolerance.
+        test_accumulator.add_linears(
+            {"a": 19.0, "b": 28.0, "c": 37.0, "d": 46.0}
+        )
+        test_accumulator.add_quadratics(
+            {("a", "b"): 4.0, ("a", "c"): -5.0, ("b", "c"): 6.0}
+        )
+
+        expected_QUBO = {
+            ("a", "a"): 19.0,
+            ("b", "b"): 28.0,
+            ("c", "c"): 37.0,
+            ("d", "d"): 46.0,
+            ("a", "b"): 4.0,
+            ("a", "c"): -5.0,
+            ("b", "c"): 6.0
+        }
+        assert expected_QUBO == test_accumulator.for_QUBO()
