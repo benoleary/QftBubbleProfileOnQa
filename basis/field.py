@@ -1,4 +1,6 @@
-from typing import Dict, List, Optional
+from __future__ import annotations
+from collections.abc import Sequence
+from typing import Optional
 
 import basis.variable
 
@@ -110,7 +112,7 @@ class FieldAtPoint:
             for i in range(field_definition.number_of_values + 1)
         ]
 
-    def in_GeV(self, spins_from_sample: Dict[str, int]):
+    def in_GeV(self, spins_from_sample: dict[str, int]):
         # This adds field_step_in_GeV to offset_from_origin_in_GeV for every |1>
         # beyond the fixed first one (and we ignore the fixed last |0>).
         total_in_GeV = self.field_definition.lower_bound_in_GeV
@@ -144,7 +146,7 @@ class FieldCollectionAtPoint:
             spatial_point_identifier=spatial_point_identifier
         )
 
-    def get_fields(self) -> List[FieldAtPoint]:
+    def get_fields(self) -> Sequence[FieldAtPoint]:
         if not self.second_field:
             return [self.first_field]
         return [self.first_field, self.second_field]

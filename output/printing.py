@@ -1,8 +1,10 @@
-from typing import Dict, List
+from __future__ import annotations
+from collections.abc import Sequence
+
 from dimod import SampleSet
 
-from structure.bubble import BubbleProfile
-from basis.field import FieldCollectionAtPoint
+from structure.bubble import BubbleProfile, ProfilePoint
+from minimization.sampling import SampleProvider
 
 
 class CsvWriter:
@@ -19,8 +21,7 @@ class CsvWriter:
         The constructor just records relevant properties from the bubble
         profile.
         """
-        self.first_field_name = bubble_profile.first_field.field_name
-        self.fields_at_points = bubble_profile.fields_at_points
+        self.bubble_profile = bubble_profile
         lattice_configuration = (
              bubble_profile.spatial_lattice_configuration
         )
@@ -33,42 +34,41 @@ class CsvWriter:
             self,
             *,
             output_CSV_filename: str,
-            solution_sample: SampleSet
+            solution_sample: SampleSet,
+            sample_provider: SampleProvider
     ):
-        content_for_CSV = self.file_lines(solution_sample)
+        content_for_CSV = self.file_lines(
+            solution_sample=solution_sample,
+            sample_provider=sample_provider
+        )
         with open(output_CSV_filename, "w") as output_file:
             output_file.write("\n".join(content_for_CSV) + "\n")
 
-    def file_lines(self, solution_sample: SampleSet) -> List[str]:
+    def file_lines(
+            self,
+            *,
+            solution_sample: SampleSet,
+            sample_provider: SampleProvider
+    ) -> Sequence[str]:
         # TODO: enhance for second field
+        profile_points = self.bubble_profile.field_strengths_at_radius_values(
+            solution_sample=solution_sample,
+            sample_provider=sample_provider
+        )
         return (
             [
                 f"r in 1/GeV {self.separation_character}"
-                f" {self.first_field_name} in GeV"
+                f" {self.bubble_profile.first_field.field_name} in GeV"
             ]
             + [
-                self._data_row_as_string(
-                    row_index=i,
-                    fields_at_point=fields_at_point,
-                    solution_sample=solution_sample
-                )
-                for i, fields_at_point in enumerate(self.fields_at_points)
+                self._data_row_as_string(profile_point)
+                for profile_point in profile_points
             ]
         )
 
-    def _data_row_as_string(
-            self,
-            *,
-            row_index: int,
-            fields_at_point: FieldCollectionAtPoint,
-            solution_sample: SampleSet
-    ) -> str:
+    def _data_row_as_string(self, profile_point: ProfilePoint) -> str:
         # TODO: enhance for second field
-        radius_in_inverse_GeV = row_index * self.spatial_step_in_inverse_GeV
-        first_field_strength = (
-            fields_at_point.first_field.in_GeV(solution_sample)
-        )
         return (
-            f"{radius_in_inverse_GeV} {self.separation_character}"
-            f" {first_field_strength}"
+            f"{profile_point.radius_in_inverse_GeV} {self.separation_character}"
+            f" {profile_point.first_field_strength_in_GeV}"
         )

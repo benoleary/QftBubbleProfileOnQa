@@ -1,8 +1,9 @@
-from typing import Tuple
+from __future__ import annotations
+
 import pytest
 
 from input.configuration import QftModelConfiguration
-from basis.field import FieldAtPoint, FieldDefinition
+from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
 from dynamics.spin import SpinHamiltonian
 
 
@@ -216,7 +217,7 @@ class TestSpinHamiltonian():
     def _set_up_field_definition(
             self,
             number_of_values_for_field
-        ) -> FieldDefinition:
+    ) -> FieldDefinition:
         # For example, if number_of_values_for_field = 3, then we want the field
         # to be
         # |1000> => _true_vacuum_value_in_GeV,
@@ -241,18 +242,20 @@ class TestSpinHamiltonian():
     def _set_up_fields_for_kinetic_tests(
             self,
             number_of_values_for_field
-        ) -> Tuple[FieldDefinition, FieldAtPoint, FieldAtPoint]:
+    ) -> tuple[FieldDefinition, FieldCollectionAtPoint, FieldCollectionAtPoint]:
         single_field_definition = self._set_up_field_definition(
             number_of_values_for_field
         )
         return (
             single_field_definition,
-            FieldAtPoint(
-                field_definition=single_field_definition,
-                spatial_point_identifier="l"
+            FieldCollectionAtPoint(
+                spatial_point_identifier="l",
+                spatial_radius_in_inverse_GeV=0.0,
+                first_field=single_field_definition
             ),
-            FieldAtPoint(
-                field_definition=single_field_definition,
-                spatial_point_identifier="u"
+            FieldCollectionAtPoint(
+                spatial_point_identifier="u",
+                spatial_radius_in_inverse_GeV=_radius_step_in_inverse_GeV,
+                first_field=single_field_definition
             )
         )

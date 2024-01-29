@@ -1,21 +1,23 @@
-from typing import Dict, List, Optional, Tuple, TypeVar
+from __future__ import annotations
+from collections.abc import Iterable, Sequence
+from typing import Optional, TypeVar
 
 
 SelfType = TypeVar("SelfType", bound="WeightAccumulator")
 T = TypeVar("T")
 
 
-def add_to_each(*, in_: List[float], from_: List[float]):
+def add_to_each(*, in_: Sequence[float], from_: Iterable[float]):
         for i, item_to_add in enumerate(from_):
             in_[i] += item_to_add
 
 
 def scaled_linears_for_variable_names(
         *,
-        variable_names: List[str],
-        linear_weights: List[float],
+        variable_names: Iterable[str],
+        linear_weights: Iterable[float],
         scaling_factor: float
-) -> Dict[str, float]:
+) -> dict[str, float]:
     return {
         n: (w * scaling_factor) for n, w in zip(variable_names, linear_weights)
         if w != 0.0
@@ -23,23 +25,23 @@ def scaled_linears_for_variable_names(
 
 
 class WeightAccumulator:
-    linear_weights: Dict[str, float]
-    quadratic_weights: Dict[Tuple[str, str], float]
+    linear_weights: dict[str, float]
+    quadratic_weights: dict[tuple[str, str], float]
 
     def __init__(
             self,
             *,
-            linear_weights: Optional[Dict[str, float]] = None,
-            quadratic_weights: Optional[Dict[Tuple[str, str], float]] = None
+            linear_weights: Optional[dict[str, float]] = None,
+            quadratic_weights: Optional[dict[tuple[str, str], float]] = None
     ):
         self.linear_weights = linear_weights or {}
         self.quadratic_weights = quadratic_weights or {}
 
-    def add_linears(self, weights_to_add: Dict[str, float]):
+    def add_linears(self, weights_to_add: dict[str, float]):
         for k, v in weights_to_add.items():
             self.linear_weights[k] = self.linear_weights.get(k, 0.0) + v
 
-    def add_quadratics(self, weights_to_add: Dict[Tuple[str, str], float]):
+    def add_quadratics(self, weights_to_add: dict[tuple[str, str], float]):
         for k, v in weights_to_add.items():
             self.quadratic_weights[k] = self.quadratic_weights.get(k, 0.0) + v
 
@@ -47,7 +49,7 @@ class WeightAccumulator:
         self.add_linears(other.linear_weights)
         self.add_quadratics(other.quadratic_weights)
 
-    def for_QUBO(self) -> Dict[Tuple[str, str], float]:
+    def for_QUBO(self) -> dict[tuple[str, str], float]:
         return {
             **self.quadratic_weights,
             **{(k, k): v for k, v in self.linear_weights.items()}
@@ -68,9 +70,9 @@ class WeightTemplate:
     quadratics_for_variable_names
     because there is no checking within these methods.
     """
-    linear_weights_for_normal: List[float]
-    linear_weights_for_transpose: List[float]
-    quadratic_weights: List[List[float]]
+    linear_weights_for_normal: Sequence[float]
+    linear_weights_for_transpose: Sequence[float]
+    quadratic_weights: Sequence[Sequence[float]]
 
     def __init__(
             self,
@@ -83,7 +85,7 @@ class WeightTemplate:
             # other.)
             number_of_values_for_normal: int,
             number_of_values_for_transpose: int,
-            initial_quadratics: Optional[List[List[float]]] = None
+            initial_quadratics: Optional[Sequence[Sequence[float]]] = None
     ):
         self.linear_weights_for_normal = [
             0.0 for _ in range(number_of_values_for_normal)
@@ -99,42 +101,12 @@ class WeightTemplate:
             ]
         )
 
-    def add_linears_for_normal(self, weights_to_add: List[float]):
-        """
-        This increments self.linear_weights_for_normal by the all the elements
-        in weights_to_add in order, without any guard against weights_to_add
-        having too many elements for self.linear_weights_for_normal!
-        """
-        add_to_each(in_=self.linear_weights_for_normal, from_=weights_to_add)
-
-    def add_linears_for_transpose(self, weights_to_add: List[float]):
-        """
-        This increments self.linear_weights_for_transpose by the all the
-        elements in weights_to_add in order, without any guard against
-        weights_to_add having too many elements for
-        self.linear_weights_for_transpose!
-        """
-        add_to_each(in_=self.linear_weights_for_transpose, from_=weights_to_add)
-
-    def add_quadratics(self, weights_to_add: List[List[float]]):
-        """
-        This increments self.quadratic_weights by the all the elements in
-        weights_to_add in order, without any guard against weights_to_add having
-        too many elements for self.quadratic_weights! The inner lists should
-        match with a full normal vector for a single element of the transpose
-        vector, and therefore the outer list should have the same length as the
-        transpose vector.
-        """
-        for i, inner_list in enumerate(weights_to_add):
-            for j, weight_to_add in enumerate(inner_list):
-                self.quadratic_weights[i][j] += weight_to_add
-
     def normal_linears_for_names(
             self,
             *,
-            variable_names: List[str],
+            variable_names: Iterable[str],
             scaling_factor: float = 1.0
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         return scaled_linears_for_variable_names(
             variable_names=variable_names,
             linear_weights=self.linear_weights_for_normal,
@@ -144,9 +116,9 @@ class WeightTemplate:
     def transpose_linears_for_names(
             self,
             *,
-            variable_names: List[str],
+            variable_names: Iterable[str],
             scaling_factor: float = 1.0
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         return scaled_linears_for_variable_names(
             variable_names=variable_names,
             linear_weights=self.linear_weights_for_transpose,
@@ -156,13 +128,13 @@ class WeightTemplate:
     def quadratics_for_variable_names(
             self,
             *,
-            normal_variable_names: List[str],
-            transpose_variable_names: List[str],
+            normal_variable_names: Iterable[str],
+            transpose_variable_names: Iterable[str],
             scaling_factor: float = 1.0
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         return {
-            (s, f): (self.quadratic_weights[j][i] * scaling_factor)
-            for i, f in enumerate(normal_variable_names)
-            for j, s in enumerate(transpose_variable_names)
-            if self.quadratic_weights[j][i] != 0.0
+            (t_n, n_n): (self.quadratic_weights[t_i][n_i] * scaling_factor)
+            for n_i, n_n in enumerate(normal_variable_names)
+            for t_i, t_n in enumerate(transpose_variable_names)
+            if self.quadratic_weights[t_i][n_i] != 0.0
         }

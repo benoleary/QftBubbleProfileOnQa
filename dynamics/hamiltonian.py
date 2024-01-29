@@ -1,6 +1,8 @@
-from typing import List, Optional, Protocol
+from __future__ import annotations
+from typing import Optional, Protocol
 
-from basis.field import FieldAtPoint, FieldDefinition
+from basis.field import FieldAtPoint, FieldCollectionAtPoint, FieldDefinition
+from input.configuration import QftModelConfiguration
 from minimization.weight import WeightAccumulator
 
 
@@ -28,8 +30,8 @@ class AnnealerHamiltonian(Protocol):
             self,
             *,
             radius_step_in_inverse_GeV: float,
-            nearer_center: FieldAtPoint,
-            nearer_edge: FieldAtPoint,
+            nearer_center: FieldCollectionAtPoint,
+            nearer_edge: FieldCollectionAtPoint,
             scaling_factor: float
     ) -> WeightAccumulator:
         raise NotImplementedError("AnnealerHamiltonian is just a Protocol")
@@ -44,18 +46,19 @@ class AnnealerHamiltonian(Protocol):
         raise NotImplementedError("AnnealerHamiltonian is just a Protocol")
 
 
-class HasDiscretizedPotential:
+class HasQftModelConfiguration:
     def __init__(
             self,
-            potential_in_quartic_GeV_per_field_step: List[List[float]]
+            model_configuration: QftModelConfiguration
     ):
-        self.potential_in_quartic_GeV_per_field_step = (
-            potential_in_quartic_GeV_per_field_step
+        self.model_configuration = model_configuration
+        potential_rows = (
+            model_configuration.potential_in_quartic_GeV_per_field_step
         )
 
-        self.minimum_potential = potential_in_quartic_GeV_per_field_step[0][0]
+        self.minimum_potential = potential_rows[0][0]
         self.maximum_potential = self.minimum_potential
-        for potential_row in self.potential_in_quartic_GeV_per_field_step:
+        for potential_row in potential_rows:
             for potential_value in potential_row:
                 if potential_value < self.minimum_potential:
                     self.minimum_potential = potential_value
@@ -64,3 +67,50 @@ class HasDiscretizedPotential:
         self.maximum_potential_difference = (
             self.maximum_potential - self.minimum_potential
         )
+
+    def get_first_field_definition(self) -> FieldDefinition:
+        return self.model_configuration.first_field
+
+    def get_second_field_definition(self) -> Optional[FieldDefinition]:
+        return self.model_configuration.second_field
+
+    def get_maximum_kinetic_contribution(
+            self,
+            radius_step_in_inverse_GeV: float
+    ) -> float:
+        first_field_kinetic = _get_maximum_kinetic_for_single_field(
+            field_definition=self.model_configuration.first_field,
+            radius_step_in_inverse_GeV=radius_step_in_inverse_GeV
+        )
+        if not self.model_configuration.second_field:
+            return first_field_kinetic
+
+        return (
+            first_field_kinetic
+            + _get_maximum_kinetic_for_single_field(
+                field_definition=self.model_configuration.second_field,
+                radius_step_in_inverse_GeV=radius_step_in_inverse_GeV
+            )
+        )
+
+    def get_maximum_potential_difference(self) -> float:
+        return self.maximum_potential_difference
+
+
+def _get_maximum_kinetic_for_single_field(
+        *,
+        field_definition: FieldDefinition,
+        radius_step_in_inverse_GeV: float
+) -> float:
+    maximum_field_difference = (
+        field_definition.step_in_GeV
+        * (field_definition.number_of_values - 1.0)
+    )
+    field_difference_over_radius_step = (
+        maximum_field_difference / radius_step_in_inverse_GeV
+    )
+    return (
+        0.5
+        * field_difference_over_radius_step
+        * field_difference_over_radius_step
+    )
