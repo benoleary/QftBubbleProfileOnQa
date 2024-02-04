@@ -60,7 +60,7 @@ class BitHamiltonian(HasQftModelConfiguration):
             / (radius_step_in_inverse_GeV * radius_step_in_inverse_GeV)
         )
 
-        for_first_field = _accumulator_from(
+        kinetic_weights = _accumulator_from(
             weight_template=self.kinetic_weight_template_for_first_field,
             normal_variable_names=(
                 nearer_center.first_field.binary_variable_names[1:-1]
@@ -72,21 +72,21 @@ class BitHamiltonian(HasQftModelConfiguration):
         )
 
         second_template = self.kinetic_weight_template_for_second_field
-        if not second_template:
-            return for_first_field
-
-        return for_first_field.add(
-            _accumulator_from(
-                weight_template=second_template,
-                normal_variable_names=(
-                    nearer_center.second_field.binary_variable_names[1:-1]
-                ),
-                transpose_variable_names=(
-                    nearer_edge.second_field.binary_variable_names[1:-1]
-                ),
-                scaling_factor=scaling_including_spatial
+        if second_template:
+            kinetic_weights.add(
+                 _accumulator_from(
+                    weight_template=second_template,
+                    normal_variable_names=(
+                        nearer_center.second_field.binary_variable_names[1:-1]
+                    ),
+                    transpose_variable_names=(
+                        nearer_edge.second_field.binary_variable_names[1:-1]
+                    ),
+                    scaling_factor=scaling_including_spatial
+                )
             )
-        )
+
+        return kinetic_weights
 
     def potential_weights(
             self,

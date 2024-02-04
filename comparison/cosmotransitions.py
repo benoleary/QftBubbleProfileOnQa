@@ -3,6 +3,7 @@ from cosmoTransitions import tunneling1D as CTT1
 import potential as P
 
 
+# TODO: comparison when there is a second field
 bubble_profile = CTT1.SingleFieldInstanton(
     -1.0,
     1.0,
@@ -10,7 +11,6 @@ bubble_profile = CTT1.SingleFieldInstanton(
     P.ct_gradient
 ).findProfile()
 
-# print(f"bubble_profile = {bubble_profile}")
 content_for_CSV = (
     ["r in 1/GeV ; f in GeV"]
     + [

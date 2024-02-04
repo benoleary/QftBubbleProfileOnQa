@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 
+# TODO: some case with a second field
 def for_SM_Higgs(
         *,
         linear_factor: float,
