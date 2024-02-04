@@ -3,6 +3,7 @@ import numpy
 import parameters
 
 
+# TODO: allow for the second field
 parameters_for_ACS = parameters.for_ACS(
     N=50,
     M=50

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, Optional
 
 import pytest
 
@@ -47,12 +47,16 @@ _radius_step_in_inverse_GeV = 0.25
 # ...
 # so the upper bound is
 # (_lower_bound + ((_number_of_field_values - 1) * _field_step_in_GeV)).
-def _get_test_field_definition(number_of_field_values: int) -> FieldDefinition:
+def _get_test_field_definition(
+        *,
+        number_of_field_values: int,
+        field_name: str = "T"
+) -> FieldDefinition:
     upper_bound = (
         _lower_bound + ((number_of_field_values - 1) * _field_step_in_GeV)
     )
     return FieldDefinition(
-        field_name="T",
+        field_name=field_name,
         number_of_values=number_of_field_values,
         lower_bound_in_GeV=_lower_bound,
         upper_bound_in_GeV=upper_bound,
@@ -66,16 +70,16 @@ def _zero_potential(field_value: int):
 
 
 # The linear term should not matter.
-def _linear_potential(field_value: int):
+def _linear_single_field_potential(field_value: int):
     return (2.0 * field_value) + 20.0
 
 
 # As ever, the linear term is irrelevant.
-def _quadratic_potential(field_value: int):
+def _quadratic_single_field_potential(field_value: int):
     return (2.5 * (field_value - 5) * (field_value - 5)) + 10.0
 
 
-def _get_potential_configuration(
+def _get_single_field_potential_configuration(
         *,
         field_definition: FieldDefinition,
         potential_function: Callable[[int], float]
@@ -132,7 +136,7 @@ class TestAnnealerHamiltonians():
                 "bit"
             ]
     )
-    def test_all_valid_bitstrings_present_with_correct_energies(
+    def test_all_valid_states_for_single_field_in_zero_potential(
         self,
         *,
         get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
@@ -142,13 +146,16 @@ class TestAnnealerHamiltonians():
         """
         This tests that the exact solver finds the correct energies for each
         valid pair of ICDW configurations of a field at neighboring radius
-        values.
+        values, removing any effect from the QFT potential by it being zero
+        everywhere.
         """
         # We want the field to take values 0, 1, 2, and 3, leading to a maximum
         # difference of 3.
         number_of_field_values = 4
-        field_definition = _get_test_field_definition(number_of_field_values)
-        potential_configuration = _get_potential_configuration(
+        field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_field_values
+        )
+        potential_configuration = _get_single_field_potential_configuration(
             field_definition=field_definition,
             potential_function=_zero_potential
         )
@@ -204,7 +211,7 @@ class TestAnnealerHamiltonians():
         # state: 1000010000, which should have the lowest energy anyway (jointly
         # with other states of zero difference between the fields).
         # We grab all the results under the energy which should only happen if
-        # the spins violate the conditions of the Ising-chain domain wall.
+        # the alignments violate the conditions of the Ising-chain domain wall.
         actual_bitstrings_to_differences = (
             _as_differences_from_lowest_energy(
                 bitstrings_to_absolute_energies=actual_bitstrings_to_energies,
@@ -271,6 +278,8 @@ class TestAnnealerHamiltonians():
             "get_Hamiltonian, domain_wall_weighter, sampler_handler",
             [
                 (
+                    # The potential does not matter for the test of the kinetic
+                    # term, so we just use the simpler case.
                     _get_spin_potential,
                     _spin_domain_wall_weighter,
                     _spin_sampler_handler
@@ -286,7 +295,194 @@ class TestAnnealerHamiltonians():
                 "bit"
             ]
     )
-    def test_linear_potential_minimized_correctly(
+    def test_all_valid_states_for_two_fields_in_zero_potential(
+        self,
+        *,
+        get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
+        domain_wall_weighter: DomainWallWeighter,
+        sampler_handler: SamplerHandler
+    ):
+        """
+        This tests that the exact solver finds the correct energies for each
+        valid pair of ICDW configurations of two fields at neighboring radius
+        values, removing any effect from the QFT potential by it being zero
+        everywhere.
+        """
+        # We want the first field to take values 0, and 1 and the second to take
+        # values 0, 1, and 2, leading to a maximum squared difference of
+        # 1^2 + 2^2 = 5.
+        number_of_first_field_values = 2
+        number_of_second_field_values = 3
+        first_field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_first_field_values,
+            field_name="N"  # For normal as opposed to transpose
+        )
+        second_field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_second_field_values,
+            field_name="T"  # For transpose as opposed to normal
+        )
+        potential_configuration = QftModelConfiguration(
+            first_field=first_field_definition,
+            second_field=second_field_definition,
+            potential_in_quartic_GeV_per_field_step=[
+                [0 for _ in range(number_of_first_field_values)]
+                for _ in range(number_of_second_field_values)
+            ]
+        )
+
+        annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
+
+        domain_end_fixing_weight, domain_wall_alignment_weight = (
+            self._get_end_and_alignment_weights(annealer_Hamiltonian)
+        )
+
+        profiles_at_points = [
+            FieldCollectionAtPoint(
+                spatial_point_identifier=f"r{i}",
+                spatial_radius_in_inverse_GeV=_radius_step_in_inverse_GeV,
+                first_field=first_field_definition,
+                second_field=second_field_definition
+            ) for i in range(2)
+        ]
+
+        at_lower_radius = profiles_at_points[0]
+        at_upper_radius = profiles_at_points[1]
+
+        calculated_weights = domain_wall_weighter.weights_for_domain_walls(
+            profiles_at_points=profiles_at_points,
+            end_weight=domain_end_fixing_weight,
+            alignment_weight=domain_wall_alignment_weight
+        )
+        calculated_weights.add(
+            annealer_Hamiltonian.kinetic_weights(
+                radius_step_in_inverse_GeV=_radius_step_in_inverse_GeV,
+                nearer_center=at_lower_radius,
+                nearer_edge=at_upper_radius,
+                scaling_factor=1.0
+            )
+        )
+
+        sample_provider = SampleProvider(
+            sampler_name="exact",
+            sampler_handler=sampler_handler
+        )
+        sampling_result = sample_provider.get_sample(calculated_weights)
+
+        # We have the order (N at 0)(T at 0)(N at 1)(T at 1) for first field N,
+        # second field T, at radius value 0 and radius value 1, respectively.
+        actual_bitstrings_to_energies = (
+            sample_provider.bitstrings_to_energies(
+                binary_variable_names=(
+                    at_lower_radius.first_field.binary_variable_names
+                    + at_lower_radius.second_field.binary_variable_names
+                    + at_upper_radius.first_field.binary_variable_names
+                    + at_upper_radius.second_field.binary_variable_names
+                ),
+                sample_set=sampling_result
+            )
+        )
+
+        # The lowest energy is going to be dependent on whether we use spin or
+        # bit variables, so we just calculate differences from the easiest
+        # state: 10010001001000 (N = 100 then T = 1000 at the lower radius then
+        # the same again at the upper radius), which should have the lowest
+        # energy anyway (jointly with other states of zero difference between
+        # the fields).
+        # We grab all the results under the energy which should only happen if
+        # the alignments violate the conditions of the Ising-chain domain wall.
+        actual_bitstrings_to_differences = (
+            _as_differences_from_lowest_energy(
+                bitstrings_to_absolute_energies=actual_bitstrings_to_energies,
+                absolute_tolerance_in_quartic_GeV=(
+                    0.75 * domain_wall_alignment_weight
+                )
+            )
+        )
+
+        field_step_squared = _field_step_in_GeV * _field_step_in_GeV
+        radius_step_squared = (
+            _radius_step_in_inverse_GeV * _radius_step_in_inverse_GeV
+        )
+        base_extra = (
+            (0.5 * field_step_squared) / radius_step_squared
+        )
+
+        expected_bitstrings_to_differences = {
+            # (0, 0) - (x, y)
+            "10010001001000": (0.0 + 0.0) * base_extra,  # (0, 0) - (0, 0)
+            "10010001001100": (0.0 + 1.0) * base_extra,  # (0, 0) - (0, 1)
+            "10010001001110": (0.0 + 4.0) * base_extra,  # (0, 0) - (0, 2)
+            "10010001101000": (1.0 + 0.0) * base_extra,  # (0, 0) - (1, 0)
+            "10010001101100": (1.0 + 1.0) * base_extra,  # (0, 0) - (1, 1)
+            "10010001101110": (1.0 + 4.0) * base_extra,  # (0, 0) - (1, 2)
+            # (0, 1) - (x, y)
+            "10011001001000": (0.0 + 1.0) * base_extra,  # (0, 1) - (0, 0)
+            "10011001001100": (0.0 + 0.0) * base_extra,  # (0, 1) - (0, 1)
+            "10011001001110": (0.0 + 1.0) * base_extra,  # (0, 1) - (0, 2)
+            "10011001101000": (1.0 + 1.0) * base_extra,  # (0, 1) - (1, 0)
+            "10011001101100": (1.0 + 0.0) * base_extra,  # (0, 1) - (1, 1)
+            "10011001101110": (1.0 + 1.0) * base_extra,  # (0, 1) - (1, 2)
+            # (0, 2) - (x, y)
+            "10011101001000": (0.0 + 4.0) * base_extra,  # (0, 2) - (0, 0)
+            "10011101001100": (0.0 + 1.0) * base_extra,  # (0, 2) - (0, 1)
+            "10011101001110": (0.0 + 0.0) * base_extra,  # (0, 2) - (0, 2)
+            "10011101101000": (1.0 + 4.0) * base_extra,  # (0, 2) - (1, 0)
+            "10011101101100": (1.0 + 1.0) * base_extra,  # (0, 2) - (1, 1)
+            "10011101101110": (1.0 + 0.0) * base_extra,  # (0, 2) - (1, 2)
+            # (1, 0) - (x, y)
+            "11010001001000": (1.0 + 0.0) * base_extra,  # (1, 0) - (0, 0)
+            "11010001001100": (1.0 + 1.0) * base_extra,  # (1, 0) - (0, 1)
+            "11010001001110": (1.0 + 4.0) * base_extra,  # (1, 0) - (0, 2)
+            "11010001101000": (0.0 + 0.0) * base_extra,  # (1, 0) - (1, 0)
+            "11010001101100": (0.0 + 1.0) * base_extra,  # (1, 0) - (1, 1)
+            "11010001101110": (0.0 + 4.0) * base_extra,  # (1, 0) - (1, 2)
+            # (1, 1) - (x, y)
+            "11011001001000": (1.0 + 1.0) * base_extra,  # (1, 1) - (0, 0)
+            "11011001001100": (1.0 + 0.0) * base_extra,  # (1, 1) - (0, 1)
+            "11011001001110": (1.0 + 1.0) * base_extra,  # (1, 1) - (0, 2)
+            "11011001101000": (0.0 + 1.0) * base_extra,  # (1, 1) - (1, 0)
+            "11011001101100": (0.0 + 0.0) * base_extra,  # (1, 1) - (1, 1)
+            "11011001101110": (0.0 + 1.0) * base_extra,  # (1, 1) - (1, 2)
+            # (1, 2) - (x, y)
+            "11011101001000": (1.0 + 4.0) * base_extra,  # (1, 2) - (0, 0)
+            "11011101001100": (1.0 + 1.0) * base_extra,  # (1, 2) - (0, 1)
+            "11011101001110": (1.0 + 0.0) * base_extra,  # (1, 2) - (0, 2)
+            "11011101101000": (0.0 + 4.0) * base_extra,  # (1, 2) - (1, 0)
+            "11011101101100": (0.0 + 1.0) * base_extra,  # (1, 2) - (1, 1)
+            "11011101101110": (0.0 + 0.0) * base_extra,  # (1, 2) - (1, 2)
+        }
+        assert (
+            len(expected_bitstrings_to_differences)
+            == len(actual_bitstrings_to_differences)
+        ), "expected (2*3)^2 results with valid bitstrings"
+        # All the energies and differences of energies should be exactly
+        # representable in binary so we can make floating-point number
+        # comparisons without needing a tolerance.
+        assert (
+            expected_bitstrings_to_differences
+            == actual_bitstrings_to_differences
+        ), "expected correct differences for all valid bitstrings"
+
+    @pytest.mark.parametrize(
+            "get_Hamiltonian, domain_wall_weighter, sampler_handler",
+            [
+                (
+                    _get_spin_potential,
+                    _spin_domain_wall_weighter,
+                    _spin_sampler_handler
+                ),
+                (
+                    _get_bit_potential,
+                    _bit_domain_wall_weighter,
+                    _bit_sampler_handler
+                )
+            ],
+            ids=[
+                "spin",
+                "bit"
+            ]
+    )
+    def test_linear_potential_minimized_correctly_for_single_field(
         self,
         *,
         get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
@@ -295,10 +491,12 @@ class TestAnnealerHamiltonians():
     ):
         # We want a minimum at 10000000, hence 7 values.
         number_of_field_values = 7
-        field_definition = _get_test_field_definition(number_of_field_values)
-        potential_configuration = _get_potential_configuration(
+        field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_field_values
+        )
+        potential_configuration = _get_single_field_potential_configuration(
             field_definition=field_definition,
-            potential_function=_linear_potential
+            potential_function=_linear_single_field_potential
         )
         annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
 
@@ -307,7 +505,7 @@ class TestAnnealerHamiltonians():
                 annealer_Hamiltonian=annealer_Hamiltonian,
                 domain_wall_weighter=domain_wall_weighter,
                 sampler_handler=sampler_handler,
-                field_definition=field_definition
+                first_field_definition=field_definition
             )
         )
         actual_bitstrings_to_differences = (
@@ -346,7 +544,7 @@ class TestAnnealerHamiltonians():
                 "bit"
             ]
     )
-    def test_quadratic_potential_minimized_correctly(
+    def test_quadratic_potential_minimized_correctly_for_single_field(
         self,
         *,
         get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
@@ -355,10 +553,12 @@ class TestAnnealerHamiltonians():
     ):
         # We want a minimum at 11111100, hence 7 values.
         number_of_field_values = 7
-        field_definition = _get_test_field_definition(number_of_field_values)
-        potential_configuration = _get_potential_configuration(
+        field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_field_values
+        )
+        potential_configuration = _get_single_field_potential_configuration(
             field_definition=field_definition,
-            potential_function=_quadratic_potential
+            potential_function=_quadratic_single_field_potential
         )
         annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
 
@@ -367,7 +567,7 @@ class TestAnnealerHamiltonians():
                 annealer_Hamiltonian=annealer_Hamiltonian,
                 domain_wall_weighter=domain_wall_weighter,
                 sampler_handler=sampler_handler,
-                field_definition=field_definition
+                first_field_definition=field_definition
             )
         )
         actual_bitstrings_to_differences = (
@@ -406,7 +606,7 @@ class TestAnnealerHamiltonians():
                 "bit"
             ]
     )
-    def test_all_values_from_potential_correct(
+    def test_all_states_from_single_field_potential_present_and_correct(
         self,
         *,
         get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
@@ -415,7 +615,9 @@ class TestAnnealerHamiltonians():
     ):
         potential_values = [1.0, 2.0, -1.0, 3.0, -2.0, 4.0]
         number_of_values = len(potential_values)
-        field_definition = _get_test_field_definition(number_of_values)
+        field_definition = _get_test_field_definition(
+            number_of_field_values=number_of_values
+        )
         potential_configuration = QftModelConfiguration(
             first_field=field_definition,
             potential_in_quartic_GeV_per_field_step=[potential_values]
@@ -427,7 +629,7 @@ class TestAnnealerHamiltonians():
                 annealer_Hamiltonian=annealer_Hamiltonian,
                 domain_wall_weighter=domain_wall_weighter,
                 sampler_handler=sampler_handler,
-                field_definition=field_definition
+                first_field_definition=field_definition
             )
         )
         actual_bitstrings_to_differences = (
@@ -471,6 +673,102 @@ class TestAnnealerHamiltonians():
             == actual_bitstrings_to_differences
         ), "incorrect energies for states"
 
+    @pytest.mark.parametrize(
+            "get_Hamiltonian, domain_wall_weighter, sampler_handler",
+            [
+                (
+                    _get_spin_potential,
+                    _spin_domain_wall_weighter,
+                    _spin_sampler_handler
+                ),
+                (
+                    _get_bit_potential,
+                    _bit_domain_wall_weighter,
+                    _bit_sampler_handler
+                )
+            ],
+            ids=[
+                "spin",
+                "bit"
+            ]
+    )
+    def test_all_states_from_two_field_potential_present_and_correct(
+        self,
+        *,
+        get_Hamiltonian: Callable[[QftModelConfiguration], AnnealerHamiltonian],
+        domain_wall_weighter: DomainWallWeighter,
+        sampler_handler: SamplerHandler
+    ):
+        potential_values = [
+            [2.0, 3.0],  # 1001000, 1101000
+            [-5.0, -7.0],  # 1001100, 1101100
+            [11.0, 13.0]  # 1001110, 1101110
+        ]
+        first_field_definition = _get_test_field_definition(
+            number_of_field_values=len(potential_values[0]),
+            field_name="N"  # For normal as opposed to transpose
+        )
+        second_field_definition = _get_test_field_definition(
+            number_of_field_values=len(potential_values),
+            field_name="T"  # For transpose as opposed to normal
+        )
+        potential_configuration = QftModelConfiguration(
+            first_field=first_field_definition,
+            second_field=second_field_definition,
+            potential_in_quartic_GeV_per_field_step=potential_values
+        )
+        annealer_Hamiltonian = get_Hamiltonian(potential_configuration)
+
+        all_bitstrings_to_energies = (
+            self._get_all_bitstrings_to_energies_for_potential_at_single_point(
+                annealer_Hamiltonian=annealer_Hamiltonian,
+                domain_wall_weighter=domain_wall_weighter,
+                sampler_handler=sampler_handler,
+                first_field_definition=first_field_definition,
+                second_field_definition=second_field_definition
+            )
+        )
+        actual_bitstrings_to_differences = (
+            _as_differences_from_lowest_energy(
+                bitstrings_to_absolute_energies=all_bitstrings_to_energies,
+                absolute_tolerance_in_quartic_GeV=(
+                    # We need to see a state at the maximum difference but we
+                    # will ignore anything above that, since they should have
+                    # invalid domain-wall configurations (and we check after
+                    # this that we really did get all the valid states).
+                    annealer_Hamiltonian.get_maximum_potential_difference()
+                    + 1.0
+                )
+            )
+        )
+
+        # Since the state with the lowest energy should be "1101100" with -7.0,
+        # we expect the potential values + 7.0 in each case.
+        expected_bitstrings_to_differences = {
+            "1001000": (potential_values[0][0] + 7.0),
+            "1101000": (potential_values[0][1] + 7.0),
+            "1001100": (potential_values[1][0] + 7.0),
+            "1101100": 0.0,
+            "1001110": (potential_values[2][0] + 7.0),
+            "1101110": (potential_values[2][1] + 7.0)
+        }
+
+        # All the energies and differences of energies should be exactly
+        # representable in binary so we can make floating-point number
+        # comparisons without needing a tolerance.
+        assert (
+            len(expected_bitstrings_to_differences.keys())
+            == len(actual_bitstrings_to_differences.keys())
+        ), "incorrect number of valid states"
+        assert (
+            expected_bitstrings_to_differences.keys()
+            == actual_bitstrings_to_differences.keys()
+        ), "incorrect valid states"
+        assert (
+            expected_bitstrings_to_differences
+            == actual_bitstrings_to_differences
+        ), "incorrect energies for states"
+
     def _get_end_and_alignment_weights(
             self,
             annealer_Hamiltonian: AnnealerHamiltonian
@@ -492,7 +790,8 @@ class TestAnnealerHamiltonians():
             annealer_Hamiltonian: AnnealerHamiltonian,
             domain_wall_weighter: DomainWallWeighter,
             sampler_handler: SamplerHandler,
-            field_definition: FieldDefinition
+            first_field_definition: FieldDefinition,
+            second_field_definition: Optional[FieldDefinition] = None
     ) -> dict[str, float]:
         domain_end_fixing_weight, domain_wall_alignment_weight = (
             self._get_end_and_alignment_weights(annealer_Hamiltonian)
@@ -503,11 +802,13 @@ class TestAnnealerHamiltonians():
             FieldCollectionAtPoint(
                 spatial_point_identifier="r",
                 spatial_radius_in_inverse_GeV=_radius_step_in_inverse_GeV,
-                first_field=field_definition
+                first_field=first_field_definition,
+                second_field=second_field_definition
             )
         ]
 
-        single_field = profiles_at_points[0].first_field
+        first_field = profiles_at_points[0].first_field
+        second_field = profiles_at_points[0].second_field
 
         calculated_weights = domain_wall_weighter.weights_for_domain_walls(
             profiles_at_points=profiles_at_points,
@@ -516,7 +817,8 @@ class TestAnnealerHamiltonians():
         )
         calculated_weights.add(
             annealer_Hamiltonian.potential_weights(
-                first_field=single_field,
+                first_field=first_field,
+                second_field=second_field,
                 scaling_factor=1.0
             )
         )
@@ -527,7 +829,17 @@ class TestAnnealerHamiltonians():
         )
 
         sampling_result = sample_provider.get_sample(calculated_weights)
+
+        variable_names = (
+            first_field.binary_variable_names
+            if not second_field
+            else (
+                first_field.binary_variable_names
+                + second_field.binary_variable_names
+            )
+        )
+
         return sample_provider.bitstrings_to_energies(
-            binary_variable_names=single_field.binary_variable_names,
+            binary_variable_names=variable_names,
             sample_set=sampling_result
         )
