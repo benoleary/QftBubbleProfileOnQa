@@ -44,7 +44,9 @@ class BitHamiltonian(HasQftModelConfiguration):
             _weights_for_single_field_potential_at_point(
                 model_configuration.potential_in_quartic_GeV_per_field_step[0]
             ) if not model_configuration.second_field
-            else None # TODO: proper weights for two fields
+            else _weights_for_function_of_two_fields(
+                model_configuration.potential_in_quartic_GeV_per_field_step
+            )
         )
 
     def kinetic_weights(
@@ -103,9 +105,28 @@ class BitHamiltonian(HasQftModelConfiguration):
                 )
             )
             return WeightAccumulator(linear_weights=linear_weights)
-        # TODO: do this properly
-        raise NotImplementedError(
-            "Not yet - use _weights_for_function_of_two_fields in __init__"
+        normal_variable_names = first_field.binary_variable_names[1:-1]
+        transpose_variable_names = second_field.binary_variable_names[1:-1]
+        linear_weights = {
+            **self.potential_weight_template.normal_linears_for_names(
+                variable_names=normal_variable_names,
+                scaling_factor=scaling_factor
+            ),
+            **self.potential_weight_template.transpose_linears_for_names(
+                variable_names=transpose_variable_names,
+                scaling_factor=scaling_factor
+            )
+        }
+        quadratic_weights= (
+            self.potential_weight_template.quadratics_for_variable_names(
+                 normal_variable_names=normal_variable_names,
+                 transpose_variable_names=transpose_variable_names,
+                 scaling_factor=scaling_factor
+            )
+        )
+        return WeightAccumulator(
+            linear_weights=linear_weights,
+            quadratic_weights=quadratic_weights
         )
 
 
