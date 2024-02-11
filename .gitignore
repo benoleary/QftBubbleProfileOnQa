@@ -164,5 +164,5 @@ junit/
 
 **/*.csv
 **/*.png
-**/temporary_gnuplot_input.*
+**/temporary_gnuplot_*
 
