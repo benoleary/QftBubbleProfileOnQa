@@ -265,7 +265,7 @@ def _weights_for_single_field_potential_at_point(
         potential_in_quartic_GeV_per_field_step: Sequence[float]
 ) -> WeightTemplate:
     """
-    This function adds calculates weights for bit variables of a single field
+    This function calculates weights for bit variables of a single field
     represented by a set of FieldAtPoint objects, one for every spatial point.
     (The calculation is significantly different when dealing with multiple
     fields at a single spatial point.)

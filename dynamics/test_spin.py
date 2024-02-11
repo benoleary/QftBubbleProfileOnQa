@@ -14,7 +14,6 @@ _radius_step_in_inverse_GeV = 0.25
 _absolute_expected_weight = 98.0
 
 
-# TODO: tests with second field
 class TestSpinHamiltonian():
     def test_kinetic_weights_for_low_resolution_fields(self):
         """

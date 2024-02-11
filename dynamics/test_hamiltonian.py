@@ -113,7 +113,6 @@ _bit_domain_wall_weighter = BitDomainWallWeighter()
 _bit_sampler_handler = BitSamplerHandler()
 
 
-# TODO: tests with second field
 class TestAnnealerHamiltonians():
     @pytest.mark.parametrize(
             "get_Hamiltonian, domain_wall_weighter, sampler_handler",
@@ -649,12 +648,12 @@ class TestAnnealerHamiltonians():
         # Since the state with the lowest energy should be "1111100" with -2.0,
         # we expect the potential values + 2.0 in each case.
         expected_bitstrings_to_differences = {
-            "1000000": (potential_values[0] + 2.0),
-            "1100000": (potential_values[1] + 2.0),
-            "1110000": (potential_values[2] + 2.0),
-            "1111000": (potential_values[3] + 2.0),
+            "1000000": 3.0,
+            "1100000": 4.0,
+            "1110000": 1.0,
+            "1111000": 5.0,
             "1111100": 0.0,
-            "1111110": (potential_values[5] + 2.0)
+            "1111110": 6.0
         }
 
         # All the energies and differences of energies should be exactly
@@ -745,12 +744,12 @@ class TestAnnealerHamiltonians():
         # Since the state with the lowest energy should be "1101100" with -7.0,
         # we expect the potential values + 7.0 in each case.
         expected_bitstrings_to_differences = {
-            "1001000": (potential_values[0][0] + 7.0),
-            "1101000": (potential_values[0][1] + 7.0),
-            "1001100": (potential_values[1][0] + 7.0),
+            "1001000": 9.0,
+            "1101000": 10.0,
+            "1001100": 2.0,
             "1101100": 0.0,
-            "1001110": (potential_values[2][0] + 7.0),
-            "1101110": (potential_values[2][1] + 7.0)
+            "1001110": 18.0,
+            "1101110": 20.0
         }
 
         # All the energies and differences of energies should be exactly
