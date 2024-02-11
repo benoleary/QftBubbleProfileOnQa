@@ -36,7 +36,9 @@ class SpinHamiltonian(HasQftModelConfiguration):
             _weights_for_single_field_potential_at_point(
                 model_configuration.potential_in_quartic_GeV_per_field_step[0]
             ) if not model_configuration.second_field
-            else None # TODO: proper weights for two fields
+            else _weights_for_two_field_potential_at_point_by_ACS(
+                model_configuration.potential_in_quartic_GeV_per_field_step
+            )
         )
 
     def kinetic_weights(
@@ -93,8 +95,23 @@ class SpinHamiltonian(HasQftModelConfiguration):
                 )
             )
             return WeightAccumulator(linear_weights=linear_weights)
-        # TODO: do this properly
-        raise NotImplementedError("Not yet, but soon")
+
+        # Note that the varying spins of one field have correlations with the
+        # fixed spins of the other field as well as correlations with the
+        # varying spins of the other field.
+        normal_variable_names = first_field.binary_variable_names
+        transpose_variable_names = second_field.binary_variable_names
+        return WeightAccumulator(
+            # In this case, only quadratic weights have been set so we skip the
+            # linears.
+            quadratic_weights=(
+                self.potential_weight_template.quadratics_for_variable_names(
+                    normal_variable_names=normal_variable_names,
+                    transpose_variable_names=transpose_variable_names,
+                    scaling_factor=scaling_factor
+                )
+            )
+        )
 
     def _positive_block_template_for(
             self,
@@ -165,10 +182,13 @@ def _weights_for_single_field_potential_at_point(
         potential_in_quartic_GeV_per_field_step: Sequence[float]
 ) -> WeightTemplate:
     """
-    This function adds calculates weights for spin variables of a single field
+    This function calculates weights for spin variables of a single field
     represented by a set of FieldAtPoint objects, one for every spatial point.
     (The calculation is significantly different when dealing with multiple
     fields at a single spatial point.)
+    This is the form given in the Physical Review D paper at
+    https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.016008 (open
+    access).
     """
     # If we have 4 values U_0, U_1, U_2, and U_3, the field has 5 binary
     # variables, where the first and last are fixed, and there are 4 valid
@@ -204,6 +224,101 @@ def _weights_for_single_field_potential_at_point(
     return weight_template
 
 
+def _weights_for_two_field_potential_at_point_by_ACS(
+        potential_matrix: Sequence[Sequence[float]]
+) -> WeightTemplate:
+    """
+    This function calculates weights for spin variables of a pair of fields
+    represented by a set of FieldAtPoint objects, one pair for every spatial
+    point, in the form given in the Physical Review D paper at
+    https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.016008 (open
+    access).
+    """
+    # While we give a derivation of the form in the bit variable case, we do not
+    # for the spin case. The form can be found in the Physical Review D paper at
+    # https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.016008 in
+    # equation 27. It is not quite the same as what one would get by taking the
+    # weights of the bit variable form we use, substituting bit-variable field f
+    # by spin-variable field F through F = 2(1 - f) for all vector elements.
+    # The linear weights are exchanged for correlations with the "fixed" first
+    # and last spins of the fields.
+    number_of_spins_for_transpose = len(potential_matrix) + 1
+    number_of_spins_for_normal = len(potential_matrix[0]) + 1
+
+    weight_template = WeightTemplate(
+        number_of_values_for_normal=number_of_spins_for_normal,
+        number_of_values_for_transpose=number_of_spins_for_transpose
+    )
+
+    # It gets a little messy because we have to account for fictitious elements
+    # of the potential matrix which are zero. The affected elements are those
+    # at the edge of the weights matrix, where i or j are greater than would fit
+    # in the potential matrix or where i or j would be negative, so "a pair" of
+    # the four elements at (i, j), ((i - 1), j), (i, (j - 1)), or
+    # ((i - 1), (j - 1)) is "missing".
+    last_normal_index_for_potential = number_of_spins_for_normal - 2
+    last_normal_index_for_weights = number_of_spins_for_normal - 1
+    last_transpose_index_for_potential = number_of_spins_for_transpose - 2
+    last_transpose_index_for_weights = number_of_spins_for_transpose - 1
+
+    for j in range(1, last_transpose_index_for_potential + 1):
+        for i in range(1, last_normal_index_for_potential + 1):
+            # The factor of 1/4 is required to get the correct result - it is
+            # not clear if the PRD paper sums over symmetric elements of J or
+            # not. If it does, then we are in agreement.
+            weight_template.quadratic_weights[j][i] = (
+                0.25
+                * (
+                    potential_matrix[j - 1][i - 1]
+                    - potential_matrix[j][i - 1]
+                    - potential_matrix[j - 1][i]
+                    + potential_matrix[j][i]
+                )
+            )
+
+    first_weight_row = weight_template.quadratic_weights[0]
+    first_potential_row = potential_matrix[0]
+    last_weight_row = (
+        weight_template.quadratic_weights[last_transpose_index_for_weights]
+    )
+    last_potential_row = potential_matrix[last_transpose_index_for_potential]
+    for i in range(1, last_normal_index_for_potential + 1):
+        # See note about factor of 0.25 above.
+        first_weight_row[i] = (
+            0.25 * (first_potential_row[i] - first_potential_row[i - 1])
+        )
+        # Note the swapped sign in comparison to above, because we are missing
+        # "the other pair of the four".
+        # See note about factor of 0.25 above.
+        last_weight_row[i] = (
+            0.25 * (last_potential_row[i - 1] - last_potential_row[i])
+        )
+
+    for j in range(1, last_transpose_index_for_potential + 1):
+        # See note about factor of 0.25 above.
+        weight_template.quadratic_weights[j][0] = (
+            0.25
+            * (
+                potential_matrix[j][0]
+                - potential_matrix[j - 1][0]
+            )
+        )
+        # Note again the swapped sign in comparison to above, because we are
+        # again missing "the other pair of the four".
+        # See note about factor of 0.25 above.
+        weight_template.quadratic_weights[j][last_normal_index_for_weights] = (
+            0.25
+            * (
+                potential_matrix[j - 1][last_normal_index_for_potential]
+                - potential_matrix[j][last_normal_index_for_potential]
+            )
+        )
+
+    # The correlations of the first and last spins of both the fields with each
+    # other can be ignored, as their correlations are not allowed to vary.
+    return weight_template
+
+
 def _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
         field_step_in_GeV: float
 ) -> float:
@@ -214,6 +329,9 @@ def _weight_for_ACS_kinetic_term_for_one_inverse_GeV_step(
     between those which belong to different FieldAtPoint instances assuming a
     spatial step size of 1/GeV. Scaling for other spatial step sizes is
     straightforward.
+    This is the form given in the Physical Review D paper at
+    https://journals.aps.org/prd/abstract/10.1103/PhysRevD.103.016008 (open
+    access).
     """
     # We assume that the field has the same step size at both spatial points.
     return (0.125 * field_step_in_GeV * field_step_in_GeV)
