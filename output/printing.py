@@ -30,7 +30,24 @@ class CsvWriter:
         )
         self.separation_character = separation_character
 
-    def write_file(
+    def write_file_from_matrix(
+            self,
+            *,
+            output_CSV_filename: str,
+            header_row: Sequence[str],
+            value_matrix: Sequence[Sequence[float]]
+    ):
+        content_for_CSV = (
+            [self.separation_character.join(header_row)]
+            + [
+                self.separation_character.join([str(v) for v in value_row])
+                for value_row in value_matrix
+            ]
+        )
+        with open(output_CSV_filename, "w") as output_file:
+            output_file.write("\n".join(content_for_CSV) + "\n")
+
+    def write_file_from_sample(
             self,
             *,
             output_CSV_filename: str,

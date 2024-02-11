@@ -1,6 +1,9 @@
 import argparse
 from dataclasses import dataclass
 
+from dimod import SampleSet
+
+from basis.field import FieldDefinition
 from dynamics.hamiltonian import AnnealerHamiltonian
 from dynamics.bit import BitHamiltonian
 from dynamics.spin import SpinHamiltonian
@@ -128,30 +131,58 @@ def main():
     )
 
     if output_CSV_filename:
+        output_filename_root = output_CSV_filename.rsplit(".", 1)[0]
+        CSV_writer = CsvWriter(bubble_profile=bubble_profile)
         print(f"writing profile in {output_CSV_filename}")
-        CsvWriter(bubble_profile=bubble_profile).write_file(
+        CSV_writer.write_file_from_sample(
             output_CSV_filename=output_CSV_filename,
             solution_sample=lowest_energy_sample,
             sample_provider=sample_provider
         )
-
         command_for_gnuplot = (
-            full_configuration.output_configuration.command_for_gnuplot
-        )
+                full_configuration.output_configuration.command_for_gnuplot
+            )
         if command_for_gnuplot:
-            picture_filename = output_CSV_filename.rsplit(".", 1)[0] + ".png"
-            plotting_filename = "temporary_gnuplot_input.in"
-            print(f"running {command_for_gnuplot} on {plotting_filename}")
-            volume_exponent = (
-                full_configuration.spatial_lattice_configuration.volume_exponent
+            plot_bubble_profile(
+                full_configuration=full_configuration,
+                output_filename_root=output_filename_root,
+                output_CSV_filename=output_CSV_filename,
+                command_for_gnuplot=command_for_gnuplot
             )
-            title_text = "Single field approximation, " + (
-                f"thin-wall approximation"
-                if volume_exponent == 0
-                else f"volume exponent {volume_exponent}"
+            if not full_configuration.QFT_model_configuration.second_field:
+                plot_potential_for_single_field(
+                    QFT_model_configuration=(
+                        full_configuration.QFT_model_configuration
+                    ),
+                    CSV_writer=CSV_writer,
+                    output_filename_root=output_filename_root,
+                    command_for_gnuplot=command_for_gnuplot
             )
-            with open(plotting_filename, "w") as output_file:
-                output_file.write(
+
+
+def plot_bubble_profile(
+        *,
+        full_configuration: FullConfiguration,
+        output_filename_root: str,
+        output_CSV_filename: str,
+        command_for_gnuplot: str
+):
+    picture_filename = output_filename_root + ".png"
+    plotting_filename = "temporary_gnuplot_bubble_profile.in"
+    print(f"running {command_for_gnuplot} on {plotting_filename}")
+    volume_exponent = (
+        full_configuration.spatial_lattice_configuration.volume_exponent
+    )
+    title_text = (
+        "Single field approximation, "
+        + (
+            f"thin-wall approximation"
+            if volume_exponent == 0
+            else f"volume exponent {volume_exponent}"
+        )
+    )
+    with open(plotting_filename, "w") as output_file:
+        output_file.write(
                     f"set title \"{title_text}\"\n"
                     "set datafile separator \";\"\n"
                     "set key autotitle columnhead\n"
@@ -162,8 +193,60 @@ def main():
                     f"set output \"{picture_filename}\"\n"
                     f"plot \"{output_CSV_filename}\""
                 )
-            import subprocess
-            subprocess.call(
+    import subprocess
+    subprocess.call(
+                f"{command_for_gnuplot} {plotting_filename}",
+                shell=True
+            )
+
+
+def plot_potential_for_single_field(
+        *,
+        QFT_model_configuration: QftModelConfiguration,
+        CSV_writer: CsvWriter,
+        output_filename_root: str,
+        command_for_gnuplot: str
+):
+    data_filename = output_filename_root + "_potential.csv"
+    picture_filename = output_filename_root + "_potential.png"
+    plotting_filename = "temporary_gnuplot_potential.in"
+    plotted_field = QFT_model_configuration.first_field
+    field_name = plotted_field.field_name
+    print(f"running {command_for_gnuplot} on {plotting_filename}")
+
+    def field_in_GeV(step_index: int) -> float:
+        return (
+            plotted_field.lower_bound_in_GeV
+            + (step_index * plotted_field.step_in_GeV)
+        )
+
+    potential_values = (
+        QFT_model_configuration.potential_in_quartic_GeV_per_field_step[0]
+    )
+
+    CSV_writer.write_file_from_matrix(
+    output_CSV_filename=data_filename,
+        header_row=[field_name, "V"],
+        value_matrix=[
+            [field_in_GeV(i), potential_values[i]]
+            for i in range(plotted_field.number_of_values)
+        ]
+    )
+
+    with open(plotting_filename, "w") as output_file:
+        output_file.write(
+                    f"set title \"Potential of single field {field_name}\"\n"
+                    "set datafile separator \";\"\n"
+                    "set key autotitle columnhead\n"
+                    "unset key\n"
+                    "set xlabel \"{field_name} in GeV\"\n"
+                    "set ylabel \"V({field_name}) in GeV^4\"\n"
+                    "set term png\n"
+                    f"set output \"{picture_filename}\"\n"
+                    f"plot \"{data_filename}\" with linespoints"
+                )
+    import subprocess
+    subprocess.call(
                 f"{command_for_gnuplot} {plotting_filename}",
                 shell=True
             )
