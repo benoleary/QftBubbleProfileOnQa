@@ -67,7 +67,6 @@ class CsvWriter:
             solution_sample: SampleSet,
             sample_provider: SampleProvider
     ) -> Sequence[str]:
-        # TODO: enhance for second field
         profile_points = self.bubble_profile.field_strengths_at_radius_values(
             solution_sample=solution_sample,
             sample_provider=sample_provider
@@ -76,6 +75,13 @@ class CsvWriter:
             [
                 f"r in 1/GeV {self.separation_character}"
                 f" {self.bubble_profile.first_field.field_name} in GeV"
+                + (
+                    "" if not self.bubble_profile.second_field
+                    else (
+                        f"{self.separation_character}"
+                        f" {self.bubble_profile.second_field.field_name} in GeV"
+                    )
+                )
             ]
             + [
                 self._data_row_as_string(profile_point)
@@ -84,8 +90,16 @@ class CsvWriter:
         )
 
     def _data_row_as_string(self, profile_point: ProfilePoint) -> str:
-        # TODO: enhance for second field
         return (
             f"{profile_point.radius_in_inverse_GeV} {self.separation_character}"
             f" {profile_point.first_field_strength_in_GeV}"
+            + (
+                # Of course, the strength could be 0.0 which is falsey, so we
+                # need to check against None explicitly.
+                "" if profile_point.second_field_strength_in_GeV is None
+                else (
+                    f"{self.separation_character}"
+                    f" {profile_point.second_field_strength_in_GeV}"
+                )
+            )
         )

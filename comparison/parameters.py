@@ -23,7 +23,7 @@ def inspired_by_SM_Higgs(
         linear_factor: float,
         number_of_steps_from_origin_to_VEV: int,
         number_of_spatial_steps: int,
-        second_field_mass_squared_scaling: Optional[float] = None
+        has_second_field: bool
 ) -> ExampleModelParameters:
     VEV_in_GeV = 246.0
     squared_VEV = VEV_in_GeV * VEV_in_GeV
@@ -36,7 +36,7 @@ def inspired_by_SM_Higgs(
     def first_field_to_GeV(f: int) -> float:
         return ((step_factor * f) - 1.0) * VEV_in_GeV
 
-    if not second_field_mass_squared_scaling:
+    if not has_second_field:
         def potential_in_quartic_GeV_from_field_in_GeV(
                 h: float,
                 g: float
@@ -67,28 +67,48 @@ def inspired_by_SM_Higgs(
             number_of_spatial_steps=number_of_spatial_steps
         )
 
-    def second_field_to_GeV(g: int) -> float:
-        return (step_factor * g * VEV_in_GeV)
 
-    def potential_in_quartic_GeV_from_field_in_GeV(
-            h: float,
-            g: float
-    ) -> float:
+    # The depth of the single field SM potential without the linear term is
+    # a quarter of the quartic coupling times the fourth power of the VEV.
+    depth_of_SM_potential = 0.25 * lambda_coupling * squared_VEV * squared_VEV
+
+    # We can control the depth and position of the lowest point of the barrier
+    # with a quartic term plus linear term.
+    depth_at_lowest_barrier = 0.8 * depth_of_SM_potential
+    second_strength_at_lowest_barrier = 0.1 * VEV_in_GeV
+    second_linear = (
+        (4.0 * depth_at_lowest_barrier)
+        / (3.0 * second_strength_at_lowest_barrier)
+    )
+    second_quartic = (
+        depth_at_lowest_barrier
+        / (3.0 * (second_strength_at_lowest_barrier**4))
+    )
+
+    def second_field_to_GeV(g: int) -> float:
+        return (step_factor * g * second_strength_at_lowest_barrier)
+
+    def potential_in_quartic_GeV_from_field_in_GeV(h: float, g: float) -> float:
         hh = (h**2)
-        gg = (g**2)
-        return (
+        purely_first = (
             lambda_coupling
             * (
-                (0.25 * (hh + gg)**2)
+                (0.25 * hh * hh)
                 - (0.5 * squared_VEV * hh)
-                - (0.5 * second_field_mass_squared_scaling * squared_VEV * gg)
                 + (linear_factor * cubic_VeV * h)
             )
+        )
+        gg = (g**2)
+        purely_second = (second_quartic * gg * gg) - (second_linear * g)
+        return (
+            purely_first
+            + (16.0 * hh * gg)
+            + purely_second
         )
 
     return ExampleModelParameters(
         first_field_bound_in_GeV=VEV_in_GeV,
-        second_field_bound_in_GeV=VEV_in_GeV,
+        second_field_bound_in_GeV=second_strength_at_lowest_barrier,
         first_field_to_GeV=first_field_to_GeV,
         second_field_to_GeV=second_field_to_GeV,
         potential_in_quartic_GeV_from_fields_in_GeV=(
@@ -109,7 +129,7 @@ def for_ACS(
         N: int,
         M: int,
         epsilon: float,
-        second_field_mass_squared_scaling: Optional[float] = None
+        has_second_field: bool
 ) -> ExampleModelParameters:
     # V = (lambda/8) (phi^2 - a^2)^2 + (epsilon/2a)(phi - a)
     # a = lambda = 1, epsilon = 0.01
@@ -119,7 +139,7 @@ def for_ACS(
     def first_field_to_GeV(phi: int) -> float:
         return ((2.0 * phi) / N) - 1.0
 
-    if not second_field_mass_squared_scaling:
+    if not has_second_field:
         def potential_in_quartic_GeV_from_field_in_GeV(
                 phi: float,
                 psi: float
@@ -156,7 +176,7 @@ def for_ACS(
         phi_squared_minus_one = phi_squared - 1.0
         psi_squared = (psi * psi)
         psi_squared_minus_scaling = (
-            psi_squared - second_field_mass_squared_scaling
+            psi_squared - 0.9
         )
         return (
             (0.125 * phi_squared_minus_one * phi_squared_minus_one)

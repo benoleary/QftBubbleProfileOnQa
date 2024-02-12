@@ -19,7 +19,7 @@ class TestBubbleProfileWithSpinVariables():
     scaling of weights with radius, and working out the expected weights again
     is a lot of effort for very little gain.
     """
-    def test_spatial_identifiers_have_same_length(self):
+    def test_spatial_identifiers_have_same_length_for_single_field(self):
         QFT_model_configuration = QftModelConfiguration(
             first_field=FieldDefinition(
                 field_name="f",
@@ -60,6 +60,85 @@ class TestBubbleProfileWithSpinVariables():
         assert (
             actual_lengths == [4 for _ in range(101)]
         ), "incorrect length(s) for spatial identifiers"
+
+    def test_all_variables_present_for_two_fields(self):
+        QFT_model_configuration = QftModelConfiguration(
+            first_field=FieldDefinition(
+                field_name="f",
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=2.0,
+                number_of_values=3,
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=2.0
+            ),
+            second_field=FieldDefinition(
+                field_name="g",
+                lower_bound_in_GeV=0.0,
+                upper_bound_in_GeV=1.0,
+                number_of_values=2,
+                true_vacuum_value_in_GeV=0.0,
+                false_vacuum_value_in_GeV=1.0
+            ),
+            potential_in_quartic_GeV_per_field_step=[
+                [0.0, 1.0, 2.0],
+                [3.0, 4.0, 5.0]
+            ]
+        )
+        spin_Hamiltonian = SpinHamiltonian(QFT_model_configuration)
+        domain_wall_weighter = SpinDomainWallWeighter()
+        spatial_lattice_configuration = SpatialLatticeConfiguration(
+            number_of_spatial_steps=3,
+            spatial_step_in_inverse_GeV=1.0,
+            volume_exponent=0
+        )
+
+        test_bubble_profile = BubbleProfile(
+            annealer_Hamiltonian=spin_Hamiltonian,
+            domain_wall_weighter=domain_wall_weighter,
+            spatial_lattice_configuration=spatial_lattice_configuration
+        )
+        actual_variable_names = set(
+            n
+            for p in test_bubble_profile.fields_at_points
+            for n in (
+                p.first_field.binary_variable_names
+                + p.second_field.binary_variable_names
+            )
+        )
+
+        expected_variable_names = set([
+            "f_r0_0",
+            "f_r0_1",
+            "f_r0_2",
+            "f_r0_3",
+            "g_r0_0",
+            "g_r0_1",
+            "g_r0_2",
+            "f_r1_0",
+            "f_r1_1",
+            "f_r1_2",
+            "f_r1_3",
+            "g_r1_0",
+            "g_r1_1",
+            "g_r1_2",
+            "f_r2_0",
+            "f_r2_1",
+            "f_r2_2",
+            "f_r2_3",
+            "g_r2_0",
+            "g_r2_1",
+            "g_r2_2",
+            "f_r3_0",
+            "f_r3_1",
+            "f_r3_2",
+            "f_r3_3",
+            "g_r3_0",
+            "g_r3_1",
+            "g_r3_2"
+        ])
+        assert (
+            actual_variable_names == expected_variable_names
+        ), "incorrect variable names"
 
     def test_weights_for_thin_wall_monotonic_potential(self):
         QFT_model_configuration = QftModelConfiguration(
