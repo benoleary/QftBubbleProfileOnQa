@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf8'?>
+<configuration>
+    <qft>
+        <first_field>
+            <field_name>f</field_name>
+            <lower_bound_in_GeV>-246.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>246.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>-246.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>246.0</false_vacuum_value_in_GeV>
+        </first_field>
+        <second_field>
+            <field_name>g</field_name>
+            <lower_bound_in_GeV>0.0</lower_bound_in_GeV>
+            <upper_bound_in_GeV>246.0</upper_bound_in_GeV>
+            <true_vacuum_value_in_GeV>0.0</true_vacuum_value_in_GeV>
+            <false_vacuum_value_in_GeV>0.0</false_vacuum_value_in_GeV>
+        </second_field>
+        <potential_in_quartic_GeV_per_field_step>
+            -122923125.0;-54074355.46875;0.0;-49346542.96875001;-113467500.00000001
+            #-85987089.84375;-61461562.5;-22161621.09375;-56733750.00000001;-76531464.84375001
+            #113467500.00000001;5023300.78125;0.0;9751113.28125;122923125.0
+        </potential_in_quartic_GeV_per_field_step>
+    </qft>
+    <space>
+        <number_of_spatial_steps>10</number_of_spatial_steps>
+        <spatial_step_in_inverse_GeV>
+            0.0020325203252032522
+        </spatial_step_in_inverse_GeV>
+        <volume_exponent>0</volume_exponent>
+    </space>
+    <annealer>
+        <sampler_name>kerberos</sampler_name>
+        <variable_type>spin</variable_type>
+    </annealer>
+    <output>
+        <output_CSV_filename>SM-like_two-field_r10_f5_s100_cloud.csv</output_CSV_filename>
+        <command_for_gnuplot>/usr/bin/gnuplot</command_for_gnuplot>
+    </output>
+</configuration>

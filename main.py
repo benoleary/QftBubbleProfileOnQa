@@ -1,9 +1,6 @@
 import argparse
 from dataclasses import dataclass
 
-from dimod import SampleSet
-
-from basis.field import FieldDefinition
 from dynamics.hamiltonian import AnnealerHamiltonian
 from dynamics.bit import BitHamiltonian
 from dynamics.spin import SpinHamiltonian

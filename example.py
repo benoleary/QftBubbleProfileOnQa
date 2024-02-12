@@ -1,49 +1,61 @@
 from __future__ import annotations
+import argparse
 from collections.abc import Iterable
+from typing import Optional
 import xml.etree.ElementTree
 
 import comparison.parameters
 
 
-def create_input():
+def create_input(
+        *,
+        model_name: str,
+        has_second_field: bool
+    ):
     """
     This provides a means of setting up the input file for a simple case.
     """
-    parameters_for_SM_Higgs = comparison.parameters.for_SM_Higgs(
-        linear_factor=0.01,
-        number_of_steps_from_origin_to_VEV=2,
-        number_of_spatial_steps=10
-    )
-    parameters_for_ACS = comparison.parameters.for_ACS(
-        N=50,
-        M=50
-    )
-    (
-        first_field_bound_in_GeV,
-        spatial_step_in_inverse_GeV,
-        field_to_GeV,
-        potential_in_quartic_GeV_from_field_in_GeV,
-        number_of_field_values,
-        number_of_spatial_steps
-    ) = parameters_for_ACS
+    if model_name == "sm":
+        model_parameters = comparison.parameters.inspired_by_SM_Higgs(
+            linear_factor=0.01,
+            number_of_steps_from_origin_to_VEV=2,
+            number_of_spatial_steps=10,
+            second_field_mass_squared_scaling=(
+                0.5 if has_second_field else None
+            )
+        )
+    elif model_name == "acs":
+        model_parameters = comparison.parameters.for_ACS(
+            N=50,
+            M=50
+        )
+    else:
+        raise NotImplementedError(f"unknown model {model_name}")
+
 
     potential_in_quartic_GeV_per_field_step = [
-        potential_in_quartic_GeV_from_field_in_GeV(field_to_GeV(f))
-        for f in range(number_of_field_values)
+        [
+            model_parameters.potential_in_quartic_GeV_from_fields_in_GeV(
+                model_parameters.first_field_to_GeV(f),
+                model_parameters.second_field_to_GeV(s)
+            )
+            for f in range(model_parameters.number_of_first_field_values)
+        ] for s in range(model_parameters.number_of_second_field_values or 1)
     ]
 
     root_element = xml.etree.ElementTree.Element("configuration")
     _add_qft_element(
         root_element=root_element,
-        first_field_bound_in_GeV=first_field_bound_in_GeV,
+        first_field_bound_in_GeV=model_parameters.first_field_bound_in_GeV,
+        second_field_bound_in_GeV=model_parameters.second_field_bound_in_GeV,
         potential_in_quartic_GeV_per_field_step=(
             potential_in_quartic_GeV_per_field_step
         )
     )
     _add_space_element(
         root_element=root_element,
-        number_of_spatial_steps=number_of_spatial_steps,
-        spatial_step_in_inverse_GeV=spatial_step_in_inverse_GeV
+        number_of_spatial_steps=model_parameters.number_of_spatial_steps,
+        spatial_step_in_inverse_GeV=model_parameters.spatial_step_in_inverse_GeV
     )
     _add_annealer_element(root_element)
     _add_output_element(root_element)
@@ -67,7 +79,8 @@ def _add_qft_element(
         *,
         root_element: xml.etree.ElementTree.Element,
         first_field_bound_in_GeV: float,
-        potential_in_quartic_GeV_per_field_step: Iterable[float]
+        second_field_bound_in_GeV: Optional[float],
+        potential_in_quartic_GeV_per_field_step: Iterable[Iterable[float]]
 ):
     qft_element = xml.etree.ElementTree.SubElement(
         root_element,
@@ -98,10 +111,39 @@ def _add_qft_element(
         "false_vacuum_value_in_GeV",
         str(first_field_bound_in_GeV)
     )
+    if second_field_bound_in_GeV:
+        second_field_element = xml.etree.ElementTree.SubElement(
+            qft_element,
+            "second_field"
+        )
+        _add(second_field_element, "field_name", "g")
+        _add(
+            second_field_element,
+            "lower_bound_in_GeV",
+            "0.0"
+        )
+        _add(
+            second_field_element,
+            "upper_bound_in_GeV",
+            str(second_field_bound_in_GeV)
+        )
+        _add(
+            second_field_element,
+            "true_vacuum_value_in_GeV",
+            "0.0"
+        )
+        _add(
+            second_field_element,
+            "false_vacuum_value_in_GeV",
+            "0.0"
+        )
     _add(
         qft_element,
         "potential_in_quartic_GeV_per_field_step",
-        ";".join(str(v) for v in potential_in_quartic_GeV_per_field_step)
+        "#".join([
+            ";".join(str(v) for v in constant_second)
+            for constant_second in potential_in_quartic_GeV_per_field_step
+        ])
     )
 
 
@@ -137,4 +179,12 @@ def _add_output_element(root_element: xml.etree.ElementTree.Element):
 
 
 if __name__ == '__main__':
-    create_input()
+    argument_parser = argparse.ArgumentParser()
+    argument_parser.add_argument("--model_name")
+    argument_parser.add_argument("--second_field", action="store_true")
+    parsed_arguments = argument_parser.parse_args()
+
+    create_input(
+        model_name=parsed_arguments.model_name,
+        has_second_field=parsed_arguments.second_field
+    )
