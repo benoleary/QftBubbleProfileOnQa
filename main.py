@@ -154,7 +154,16 @@ def main():
                     CSV_writer=CSV_writer,
                     output_filename_root=output_filename_root,
                     command_for_gnuplot=command_for_gnuplot
-            )
+                )
+            else:
+                plot_potential_for_two_fields(
+                    QFT_model_configuration=(
+                        full_configuration.QFT_model_configuration
+                    ),
+                    CSV_writer=CSV_writer,
+                    output_filename_root=output_filename_root,
+                    command_for_gnuplot=command_for_gnuplot
+                )
 
 
 def plot_bubble_profile(
@@ -170,31 +179,60 @@ def plot_bubble_profile(
     volume_exponent = (
         full_configuration.spatial_lattice_configuration.volume_exponent
     )
-    title_text = (
-        "Single field approximation, "
-        + (
-            f"thin-wall approximation"
-            if volume_exponent == 0
-            else f"volume exponent {volume_exponent}"
-        )
+    first_field_name = (
+        full_configuration.QFT_model_configuration.first_field.field_name
     )
     with open(plotting_filename, "w") as output_file:
-        output_file.write(
-                    f"set title \"{title_text}\"\n"
-                    "set datafile separator \";\"\n"
-                    "set key autotitle columnhead\n"
-                    "unset key\n"
-                    "set xlabel \"r in 1/GeV\"\n"
-                    "set ylabel \"f in GeV\"\n"
-                    "set term png\n"
-                    f"set output \"{picture_filename}\"\n"
-                    f"plot \"{output_CSV_filename}\""
+        if not full_configuration.QFT_model_configuration.second_field:
+            title_text = (
+                "Single field profile, "
+                + (
+                    f"thin-wall approximation"
+                    if volume_exponent == 0
+                    else f"volume exponent {volume_exponent}"
                 )
+            )
+            output_file.write(
+                f"set title \"{title_text}\"\n"
+                "set datafile separator \";\"\n"
+                "set key autotitle columnhead\n"
+                "unset key\n"
+                "set xlabel \"r in 1/GeV\"\n"
+                f"set ylabel \"{first_field_name} in GeV\"\n"
+                "set term png\n"
+                f"set output \"{picture_filename}\"\n"
+                f"plot \"{output_CSV_filename}\""
+            )
+        else:
+            second_field = (
+                full_configuration.QFT_model_configuration.second_field
+            )
+            title_text = (
+                "Two-field profile, "
+                + (
+                    f"thin-wall approximation"
+                    if volume_exponent == 0
+                    else f"volume exponent {volume_exponent}"
+                )
+            )
+            output_file.write(
+                f"set title \"{title_text}\"\n"
+                "set datafile separator \";\"\n"
+                "set key autotitle columnhead\n"
+                "unset key\n"
+                "set xlabel \"r in 1/GeV\"\n"
+                f"set ylabel \"{second_field.field_name} in GeV\"\n"
+                f"set zlabel \"{first_field_name} in GeV\"\n"
+                "set term png\n"
+                f"set output \"{picture_filename}\"\n"
+                f"splot \"{output_CSV_filename}\" using 1:3:2 with lines"
+            )
+
     import subprocess
     subprocess.call(
-                f"{command_for_gnuplot} {plotting_filename}",
-                shell=True
-            )
+        f"{command_for_gnuplot} {plotting_filename}",
+        shell=True
+    )
 
 
 def plot_potential_for_single_field(
@@ -207,9 +245,11 @@ def plot_potential_for_single_field(
     data_filename = output_filename_root + "_potential.csv"
     picture_filename = output_filename_root + "_potential.png"
     plotting_filename = "temporary_gnuplot_potential.in"
+
+    print(f"running {command_for_gnuplot} on {plotting_filename}")
+
     plotted_field = QFT_model_configuration.first_field
     field_name = plotted_field.field_name
-    print(f"running {command_for_gnuplot} on {plotting_filename}")
 
     def field_in_GeV(step_index: int) -> float:
         return (
@@ -236,17 +276,86 @@ def plot_potential_for_single_field(
                     "set datafile separator \";\"\n"
                     "set key autotitle columnhead\n"
                     "unset key\n"
-                    "set xlabel \"{field_name} in GeV\"\n"
-                    "set ylabel \"V({field_name}) in GeV^4\"\n"
+                    f"set xlabel \"{field_name} in GeV\"\n"
+                    f"set ylabel \"V({field_name}) in GeV^4\"\n"
                     "set term png\n"
                     f"set output \"{picture_filename}\"\n"
                     f"plot \"{data_filename}\" with linespoints"
                 )
     import subprocess
     subprocess.call(
-                f"{command_for_gnuplot} {plotting_filename}",
-                shell=True
+        f"{command_for_gnuplot} {plotting_filename}",
+        shell=True
+    )
+
+def plot_potential_for_two_fields(
+        *,
+        QFT_model_configuration: QftModelConfiguration,
+        CSV_writer: CsvWriter,
+        output_filename_root: str,
+        command_for_gnuplot: str
+):
+    data_filename = output_filename_root + "_potential.csv"
+    picture_filename = output_filename_root + "_potential.png"
+    plotting_filename = "temporary_gnuplot_potential.in"
+
+    print(f"running {command_for_gnuplot} on {plotting_filename}")
+
+    first_field = QFT_model_configuration.first_field
+
+    def first_in_GeV(step_index: int) -> float:
+        return (
+            first_field.lower_bound_in_GeV
+            + (step_index * first_field.step_in_GeV)
+        )
+
+    second_field = QFT_model_configuration.second_field
+
+    def second_in_GeV(step_index: int) -> float:
+        return (
+            second_field.lower_bound_in_GeV
+            + (step_index * second_field.step_in_GeV)
+        )
+
+    potential_values = (
+        QFT_model_configuration.potential_in_quartic_GeV_per_field_step
+    )
+
+    value_matrix = []
+    for j in range(second_field.number_of_values):
+        for i in range(first_field.number_of_values):
+            value_matrix.append(
+                [first_in_GeV(i), second_in_GeV(j), potential_values[j][i]]
             )
+        # We need a blank line between batches with the same value for one
+        # co-ordinate so that Gnuplot will plot it as a surface.
+        value_matrix.append([])
+
+    CSV_writer.write_file_from_matrix(
+        output_CSV_filename=data_filename,
+            header_row=[first_field.field_name, second_field.field_name, "V"],
+            value_matrix=value_matrix
+        )
+
+    field_names = f"{first_field.field_name}, {second_field.field_name}"
+    with open(plotting_filename, "w") as output_file:
+        output_file.write(
+                    f"set title \"Potential of fields {field_names}\"\n"
+                    "set datafile separator \";\"\n"
+                    "set key autotitle columnhead\n"
+                    "unset key\n"
+                    f"set xlabel \"{first_field.field_name} in GeV\"\n"
+                    f"set ylabel \"{second_field.field_name} in GeV\"\n"
+                    f"set zlabel \"V({field_names}) in GeV^4\"\n"
+                    "set term png\n"
+                    f"set output \"{picture_filename}\"\n"
+                    f"splot \"{data_filename}\" with linespoints"
+                )
+    import subprocess
+    subprocess.call(
+        f"{command_for_gnuplot} {plotting_filename}",
+        shell=True
+    )
 
 
 if __name__ == "__main__":

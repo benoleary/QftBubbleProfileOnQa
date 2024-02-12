@@ -234,7 +234,29 @@ class BubbleProfile:
                 )
             )
         )
-        # TODO: enhance for second field
+
+        center_second_field = self.fields_at_points[0].second_field
+        if center_second_field:
+            second_field_definition = center_second_field.field_definition
+            calculated_weights.add(
+                self.domain_wall_weighter.weights_for_fixed_value(
+                    field_at_point=center_second_field,
+                    fixing_weight=end_weight,
+                    number_of_ones=(
+                        1 + second_field_definition.true_vacuum_value_in_steps
+                    )
+                )
+            )
+            calculated_weights.add(
+                self.domain_wall_weighter.weights_for_fixed_value(
+                    field_at_point=self.fields_at_points[-1].second_field,
+                    fixing_weight=end_weight,
+                    number_of_ones=(
+                        1 + second_field_definition.false_vacuum_value_in_steps
+                    )
+                )
+            )
+
         return calculated_weights
 
     def _get_potential_weights(self) -> WeightAccumulator:
