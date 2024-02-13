@@ -135,9 +135,10 @@ def for_ACS(
     # a = lambda = 1, epsilon = 0.01
     # V = (1/8) (phi^2 - 1)^2 + (0.005)(phi - 1)
     # and phi is normalized to be between -1.0 and +1.0 inclusive.
+    step_factor = 2.0 / N
 
     def first_field_to_GeV(phi: int) -> float:
-        return ((2.0 * phi) / N) - 1.0
+        return (step_factor * phi) - 1.0
 
     if not has_second_field:
         def potential_in_quartic_GeV_from_field_in_GeV(
@@ -165,8 +166,24 @@ def for_ACS(
             number_of_spatial_steps=M
         )
 
+    # As above, we can use psi^4 - psi to force a low point in the barrier at a
+    # specific value of psi and with a specific depth.
+    # The depth of the single field potential without the linear term is 0, so
+    # we need to look rather at the potential at phi = 0.
+    height_of_barrier = 0.125
+    height_at_lowest_barrier = 0.2 * height_of_barrier
+    psi_at_lowest_barrier = 0.1
+    psi_linear = (
+        (4.0 * (height_of_barrier - height_at_lowest_barrier))
+        / (3.0 * psi_at_lowest_barrier)
+    )
+    psi_quartic = (
+        psi_linear
+        / (4.0 * (psi_at_lowest_barrier**3))
+    )
+
     def second_field_to_GeV(psi: int) -> float:
-        return ((2.0 * psi) / N)
+        return 2.0 * step_factor * psi * psi_at_lowest_barrier
 
     def potential_in_quartic_GeV_from_field_in_GeV(
             phi: float,
@@ -174,27 +191,31 @@ def for_ACS(
     ) -> float:
         phi_squared = (phi * phi)
         phi_squared_minus_one = phi_squared - 1.0
-        psi_squared = (psi * psi)
-        psi_squared_minus_scaling = (
-            psi_squared - 0.9
-        )
-        return (
+        purely_phi = (
             (0.125 * phi_squared_minus_one * phi_squared_minus_one)
-            + (0.125 * psi_squared_minus_scaling * psi_squared_minus_scaling)
-            + (0.25 * psi_squared * psi_squared)
             + (epsilon * (phi - 1.0))
+        )
+        psi_squared = (psi * psi)
+        purely_psi = (
+            (psi_quartic * psi_squared * psi_squared) - (psi_linear * psi)
+        )
+
+        return (
+            purely_phi
+            + (80.0 * phi_squared * psi_squared)
+            + purely_psi
         )
 
     return ExampleModelParameters(
         first_field_bound_in_GeV=1.0,
-        second_field_bound_in_GeV=1.0,
+        second_field_bound_in_GeV=(2.0 * psi_at_lowest_barrier),
         first_field_to_GeV=first_field_to_GeV,
         second_field_to_GeV=second_field_to_GeV,
         potential_in_quartic_GeV_from_fields_in_GeV=(
             potential_in_quartic_GeV_from_field_in_GeV
         ),
         number_of_first_field_values=(N + 1),
-        number_of_second_field_values=((N + 1) / 2),
+        number_of_second_field_values=(int(N / 2) + 1),
         # A guess, because they plot rho from 0 to 25 for M = 50.
         spatial_step_in_inverse_GeV=0.5,
         number_of_spatial_steps=M
