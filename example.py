@@ -24,8 +24,10 @@ def create_input(
         )
     elif model_name == "acs":
         model_parameters = comparison.parameters.for_ACS(
-            N=50,
-            M=50
+            N=20,
+            M=20,
+            epsilon=0.01,
+            has_second_field=has_second_field
         )
     else:
         raise NotImplementedError(f"unknown model {model_name}")
