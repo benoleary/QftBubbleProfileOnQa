@@ -18,6 +18,29 @@ class ExampleModelParameters:
     number_of_spatial_steps: int
 
 
+def for_model(
+        *,
+        model_name: str,
+        has_second_field: bool
+) -> ExampleModelParameters:
+    if model_name == "sm":
+        return inspired_by_SM_Higgs(
+            linear_factor=0.01,
+            number_of_steps_from_origin_to_VEV=2,
+            number_of_spatial_steps=10,
+            has_second_field=has_second_field
+        )
+    elif model_name == "acs":
+        return for_ACS(
+            N=20,
+            M=20,
+            epsilon=0.01,
+            has_second_field=has_second_field
+        )
+    else:
+        raise NotImplementedError(f"unknown model {model_name}")
+
+
 def inspired_by_SM_Higgs(
         *,
         linear_factor: float,

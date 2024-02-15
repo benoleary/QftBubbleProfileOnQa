@@ -69,12 +69,12 @@ def main():
         f"QftBubbleProfileOnQa for input file {parsed_arguments.input_file}"
     ) if sampler_name == "dwave" else None
     sample_provider = SampleProvider(
-            sampler_name=sampler_name,
-            sampler_handler=variable_type_dependence.sample_handler,
-            message_for_Leap=message_for_Leap,
-            number_of_shots=(
-                full_configuration.annealer_configuration.number_of_shots
-            )
+        sampler_name=sampler_name,
+        sampler_handler=variable_type_dependence.sample_handler,
+        message_for_Leap=message_for_Leap,
+        number_of_shots=(
+            full_configuration.annealer_configuration.number_of_shots
+        )
     )
     message_end = (
         f" online via Leap ({sampler_name})"
@@ -137,8 +137,8 @@ def main():
             sample_provider=sample_provider
         )
         command_for_gnuplot = (
-                full_configuration.output_configuration.command_for_gnuplot
-            )
+            full_configuration.output_configuration.command_for_gnuplot
+        )
         if command_for_gnuplot:
             plot_bubble_profile(
                 full_configuration=full_configuration,
@@ -272,16 +272,16 @@ def plot_potential_for_single_field(
 
     with open(plotting_filename, "w") as output_file:
         output_file.write(
-                    f"set title \"Potential of single field {field_name}\"\n"
-                    "set datafile separator \";\"\n"
-                    "set key autotitle columnhead\n"
-                    "unset key\n"
-                    f"set xlabel \"{field_name} in GeV\"\n"
-                    f"set ylabel \"V({field_name}) in GeV^4\"\n"
-                    "set term png\n"
-                    f"set output \"{picture_filename}\"\n"
-                    f"plot \"{data_filename}\" with linespoints"
-                )
+            f"set title \"Potential of single field {field_name}\"\n"
+            "set datafile separator \";\"\n"
+            "set key autotitle columnhead\n"
+            "unset key\n"
+            f"set xlabel \"{field_name} in GeV\"\n"
+            f"set ylabel \"V({field_name}) in GeV^4\"\n"
+            "set term png\n"
+            f"set output \"{picture_filename}\"\n"
+            f"plot \"{data_filename}\" with linespoints"
+        )
     import subprocess
     subprocess.call(
         f"{command_for_gnuplot} {plotting_filename}",
@@ -333,24 +333,24 @@ def plot_potential_for_two_fields(
 
     CSV_writer.write_file_from_matrix(
         output_CSV_filename=data_filename,
-            header_row=[first_field.field_name, second_field.field_name, "V"],
-            value_matrix=value_matrix
-        )
+        header_row=[first_field.field_name, second_field.field_name, "V"],
+        value_matrix=value_matrix
+    )
 
     field_names = f"{first_field.field_name}, {second_field.field_name}"
     with open(plotting_filename, "w") as output_file:
         output_file.write(
-                    f"set title \"Potential of fields {field_names}\"\n"
-                    "set datafile separator \";\"\n"
-                    "set key autotitle columnhead\n"
-                    "unset key\n"
-                    f"set xlabel \"{first_field.field_name} in GeV\"\n"
-                    f"set ylabel \"{second_field.field_name} in GeV\"\n"
-                    f"set zlabel \"V({field_names}) in GeV^4\"\n"
-                    "set term png\n"
-                    f"set output \"{picture_filename}\"\n"
-                    f"splot \"{data_filename}\" with linespoints"
-                )
+            f"set title \"Potential of fields {field_names}\"\n"
+            "set datafile separator \";\"\n"
+            "set key autotitle columnhead\n"
+            "unset key\n"
+            f"set xlabel \"{first_field.field_name} in GeV\"\n"
+            f"set ylabel \"{second_field.field_name} in GeV\"\n"
+            f"set zlabel \"V({field_names}) in GeV^4\"\n"
+            "set term png\n"
+            f"set output \"{picture_filename}\"\n"
+            f"splot \"{data_filename}\" with linespoints"
+        )
     import subprocess
     subprocess.call(
         f"{command_for_gnuplot} {plotting_filename}",

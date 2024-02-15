@@ -15,22 +15,10 @@ def create_input(
     """
     This provides a means of setting up the input file for a simple case.
     """
-    if model_name == "sm":
-        model_parameters = comparison.parameters.inspired_by_SM_Higgs(
-            linear_factor=0.01,
-            number_of_steps_from_origin_to_VEV=2,
-            number_of_spatial_steps=10,
-            has_second_field=has_second_field
-        )
-    elif model_name == "acs":
-        model_parameters = comparison.parameters.for_ACS(
-            N=20,
-            M=20,
-            epsilon=0.01,
-            has_second_field=has_second_field
-        )
-    else:
-        raise NotImplementedError(f"unknown model {model_name}")
+    model_parameters = comparison.parameters.for_model(
+        model_name=model_name,
+        has_second_field=has_second_field
+    )
 
     potential_in_quartic_GeV_per_field_step = [
         [

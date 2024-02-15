@@ -166,3 +166,6 @@ junit/
 **/*.png
 **/temporary_gnuplot_*
 
+# We do not want to keep a generated example except those in the correct directory.
+example.xml
+
