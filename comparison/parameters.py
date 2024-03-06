@@ -32,8 +32,8 @@ def for_model(
         )
     elif model_name == "acs":
         return for_ACS(
-            N=20,
-            M=20,
+            N=50,
+            M=50,
             epsilon=0.01,
             has_second_field=has_second_field
         )
@@ -171,7 +171,7 @@ def for_ACS(
             phi_squared_minus_one = (phi * phi) - 1.0
             return (
                 (0.125 * phi_squared_minus_one * phi_squared_minus_one)
-                + (epsilon * (phi - 1.0))
+                + (0.5 * epsilon * (phi - 1.0))
             )
 
         return ExampleModelParameters(
@@ -216,7 +216,7 @@ def for_ACS(
         phi_squared_minus_one = phi_squared - 1.0
         purely_phi = (
             (0.125 * phi_squared_minus_one * phi_squared_minus_one)
-            + (epsilon * (phi - 1.0))
+            + (0.5 * epsilon * (phi - 1.0))
         )
         psi_squared = (psi * psi)
         purely_psi = (
