@@ -8,10 +8,11 @@ from potential import CtPotential
 
 def for_single_field(ct_potential: CtPotential):
     bubble_profile = SingleFieldInstanton(
-        -1.0,
-        1.0,
-        ct_potential.get_single_field_potential(),
-        ct_potential.get_single_field_gradient()
+        phi_absMin=-1.0,
+        phi_metaMin=1.0,
+        V=ct_potential.get_single_field_potential(),
+        dV=ct_potential.get_single_field_gradient(),
+        alpha=3
     ).findProfile()
 
     content_for_CSV = (
