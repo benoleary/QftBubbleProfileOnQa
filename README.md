@@ -91,3 +91,16 @@ PYTHONPATH=/path/to/cosmotransitions/ python3 cosmotransitions.py --model_name a
 
 for parameters used in https://arxiv.org/abs/2003.07374 extended to using a
 second field (but not the U(1) string case described in that paper).
+
+
+# Notes
+
+Please be aware that the implementation here wastes 2 qubits per word because I
+did not pay enough attention to the original Ising-chain domain wall paper,
+where the fixed initial |1> and fixed final |0> are left out as fictitious.
+
+Furthermore, the objective function minimized by this program is actually the
+integral of the Hamiltonian all multiplied by a constant factor of the inverse
+of the lattice spacing. This does not affect the resulting bubble profile, but
+the energy of the sample needs to be scaled as well as having the contributions
+from the extra ICDW-enforcing and bubble-center-and-edge-fixing terms removed.
