@@ -207,12 +207,7 @@ class BubbleProfile:
             end_weight:float
     ) -> WeightAccumulator:
         """
-        This only works in the assumption of a single field which is set to
-        1000... (or as many 1s as implied by the true vacuum in steps according
-        to the field definition object) at the center and ...1110 (or as many 0s
-        as implied by the false vacuum in steps according to the field
-        definition object) at the edge, which is why the second field is
-        ignored.
+        This takes the positions of the vacua from the field definitions.
         """
         center_first_field = self.fields_at_points[0].first_field
         first_field_definition = center_first_field.field_definition
