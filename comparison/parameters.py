@@ -74,3 +74,48 @@ def for_ACS(
         N + 1,
         M
     )
+
+
+def for_thick_ACS(
+        *,
+        N: int,
+        M: int
+    ) -> Tuple[float, float, float, Callable[[int], float]]:
+    # want +- 1
+    # (dV/df)/c = (x^2 - 1)(x - b) = x^3 - b x^2 - x + b
+    # V/c = x^4/4 - bx^3/3 - x^2/2 + bx
+    # diff = c ((1/4 - b/3 - 1/2 + b) - (1/4 + b/3 - 1/2 - b))
+    # = -2 c b (1/3 - 1) = 4 b c / 3
+    # -1 < b < 1 so need to use c
+    # barrier height out of false
+    # = c ((b^4/4 - b^4/3 - b^2/2 + b^2) - (1/4 - b/3 - 1/2 + b))
+    # = c ((-b^4/12 + b^2/2) - (2b/3 - 1/4))
+    # = c (-b^4/12 + b^2/2 - 2b/3 + 1/4)
+    # b = 1/2, barrier/c = 1/4 - 1/3 + 1/8 - 1/198 = a bit under 1/24,
+    # diff/c = 2/3
+    # c = 1/2 so that quartic factor is 1/8, subtract 1/24 to have 0 at x = +1
+    # V = x^4/8 - x^3/12 - x^2/4 + x/4 - 1/24
+    # dV/dx = x^3/2 - x^2/4 - x/2 + 1/4
+
+    def field_to_GeV(f: int) -> float:
+        return ((2.0 * f) / N) - 1.0
+
+    def potential_in_quartic_GeV_from_field_in_GeV(phi: float) -> float:
+        return (
+            (0.125 * (phi**4))
+            - ((phi**3) / 12.0)
+            - (0.25 * (phi**2))
+            + (0.25 * phi)
+            - (1.0 / 24.0)
+        )
+
+    return (
+        -1.0,
+        # The values of phi have to go from -1 to +1.
+        (2.0 / N),
+        0.5,
+        field_to_GeV,
+        potential_in_quartic_GeV_from_field_in_GeV,
+        N + 1,
+        M
+    )

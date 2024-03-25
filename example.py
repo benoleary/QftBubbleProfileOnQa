@@ -15,6 +15,10 @@ def create_input():
         N=50,
         M=50
     )
+    parameters_for_ACS = comparison.parameters.for_thick_ACS(
+        N=50,
+        M=50
+    )
     (
         first_field_offset_in_GeV,
         first_field_step_in_GeV,
